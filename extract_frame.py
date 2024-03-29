@@ -22,7 +22,7 @@ def is_dir_empty(path):
     
 def to_image(video_path, output_path, force_flag):
     '''Converts mp4 video into individual frames and stores in provided output path.
- 
+
     Parameters:
         video_path(str): Path to video.
         output_path(str): Path to output dir.       
@@ -31,7 +31,7 @@ def to_image(video_path, output_path, force_flag):
     output_abs_path = output_path[0].resolve()
     if not str(input_abs_path).endswith(".mp4"):
         raise ValueError(f"Input is not an mp4 file.")
- 
+
     
     if os.path.exists(output_abs_path):
         if not force_flag:
@@ -39,9 +39,9 @@ def to_image(video_path, output_path, force_flag):
                 raise IOError(f"Files already exist in {output_abs_path}.")
     else:
         raise FileNotFoundError(f"{output_abs_path} does not exist.")
- 
+
     vid = cv.VideoCapture(str(input_abs_path))
- 
+
     count = 0
     while True:
         try:
