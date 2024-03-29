@@ -36,38 +36,38 @@ def combine_images(input_path, output_path):
             raise IOError(f"Files already exist in {output_abs_path}")
     else:
         raise FileNotFoundError(f"{output_abs_path} does not exist")
-        
-    for i in range(count - 2):
-        img1 = cv.imread(f"{input_abs_path}/frame{i}.jpg")
-        img2 = cv.imread(f"{input_abs_path}/frame{i+1}.jpg")
+    
+    for i in range(count - 2): #control how many frames
+        img1 = cv.imread(f"{input_abs_path}/{str(i).zfill(4)}.jpg")
+        img2 = cv.imread(f"{input_abs_path}/{str(i+1).zfill(4)}.jpg")
         difference = cv.absdiff(img1, img2)
 
         greyscaled = cv.cvtColor(difference, cv.COLOR_BGR2GRAY)
         ret, mask = cv.threshold(greyscaled, 0, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU)
-        difference[mask != 255] = [0, 0, 255]
+        difference[mask != 255] = [0, 0, 255] #might want to make a parmater
         cv.imwrite(f"{output_abs_path}/diff{i}.png", difference)
         
     img = cv.imread(f"{output_abs_path}/diff0.png", 0)
-    for x in range(1,40):
+    for x in range(count - 3):
         img_name = f"{output_abs_path}/diff{x}.png"
         print('Processing:', img_name)
         nxt = cv.imread(img_name, 0)
         for i, row in enumerate(img):
             for j, pixel in enumerate(row):
                 d = int(img[i][j]) - int(nxt[i][j])
-                if abs(d) > 15:
+                if abs(d) > 15: #2 successive frames, mayeb another tool to calc 
                     img[i][j] = 255
                 else:
                     img[i][j] = (int(img[i][j]) + int(nxt[i][j]))/2
+        os.remove(f"{output_abs_path}/diff{x}.png")
+    os.remove(f"{output_abs_path}/diff{max(range(count- 2))}.png")
 
     for i, row in enumerate(img):
         for j, pixel in enumerate(row):
             if img[i][j] < 255:
                 img[i][j] = 0
-            
-    cv.imshow('Foo',img)
-    cv.waitKey(0)
-    cv.destroyAllWindows()
+    cv.imwrite(f"{output_abs_path}/final.png", img)
+    print("Image processing sucessful")
 
 def init_argparse() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
@@ -85,7 +85,7 @@ def init_argparse() -> argparse.ArgumentParser:
     parser.add_argument(
         "-o", "--outdir", action="store", nargs=1, type=pathlib.Path,
         help = "Directory to store image differences."
-    )
+    )   
     return parser
 
 def main() -> None:
