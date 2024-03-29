@@ -18,7 +18,7 @@ def is_dir_empty(path):
         return next(scan, None) is None
     
 
-def combine_images(input_path, output_path):
+def combine_images(input_path, output_path, force_flag, frame_skip):
     '''Takes frames and computes difference between them, and combines these differences into one image.
 
     Parameters:
@@ -32,12 +32,13 @@ def combine_images(input_path, output_path):
         raise IOError("Frames folder is empty")
         
     if os.path.exists(output_abs_path):
-        if not is_dir_empty(output_abs_path):
-            raise IOError(f"Files already exist in {output_abs_path}")
+        if not force_flag:
+            if not is_dir_empty(output_abs_path):
+                raise IOError(f"Files already exist in {output_abs_path}.")
     else:
-        raise FileNotFoundError(f"{output_abs_path} does not exist")
+        raise FileNotFoundError(f"{output_abs_path} does not exist.")
     
-    for i in range(count - 2): #control how many frames
+    for i in range(0, count-1, frame_skip): #control how many frame skipped
         img1 = cv.imread(f"{input_abs_path}/{str(i).zfill(4)}.jpg")
         img2 = cv.imread(f"{input_abs_path}/{str(i+1).zfill(4)}.jpg")
         difference = cv.absdiff(img1, img2)
@@ -46,22 +47,22 @@ def combine_images(input_path, output_path):
         ret, mask = cv.threshold(greyscaled, 0, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU)
         difference[mask != 255] = [0, 0, 255] #might want to make a parmater
         cv.imwrite(f"{output_abs_path}/diff{i}.png", difference)
-        
+    
     img = cv.imread(f"{output_abs_path}/diff0.png", 0)
-    for x in range(count - 3):
+    
+    for x in range(0, count-1, frame_skip):
         img_name = f"{output_abs_path}/diff{x}.png"
         print('Processing:', img_name)
         nxt = cv.imread(img_name, 0)
         for i, row in enumerate(img):
             for j, pixel in enumerate(row):
                 d = int(img[i][j]) - int(nxt[i][j])
-                if abs(d) > 15: #2 successive frames, mayeb another tool to calc 
+                if abs(d) > 12: #2 successive frames, mayeb another tool to calc 
                     img[i][j] = 255
                 else:
                     img[i][j] = (int(img[i][j]) + int(nxt[i][j]))/2
         os.remove(f"{output_abs_path}/diff{x}.png")
-    os.remove(f"{output_abs_path}/diff{max(range(count- 2))}.png")
-
+    
     for i, row in enumerate(img):
         for j, pixel in enumerate(row):
             if img[i][j] < 255:
@@ -71,7 +72,9 @@ def combine_images(input_path, output_path):
 
 def init_argparse() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        usage="%(prog)s [[-v|--version] | [-h|--help]] | [-i|--indir <input-file-path> -o|--outdir <output-file-path>]",
+        usage="""%(prog)s [[-v|--version] | [-h|--help]] 
+        | [-i|--indir <input-file-path> -o|--outdir <output-file-path>] 
+        | [-f|--force] | [-s|--skip]""",
         description="Takes frames and combines them into one photo"
     )
     parser.add_argument(
@@ -86,13 +89,21 @@ def init_argparse() -> argparse.ArgumentParser:
         "-o", "--outdir", action="store", nargs=1, type=pathlib.Path,
         help = "Directory to store image differences."
     )   
+    parser.add_argument(
+        "-f", "--force", action=argparse.BooleanOptionalAction, type=bool,
+        help = "Force writes to directory with pre-existing files and overwrites old files."
+    )
+    parser.add_argument(
+        "-s", "--skip", action="store", default="1", type=int,
+        help = "Choose interval of frames to process."
+    )
     return parser
 
 def main() -> None:
     parser = init_argparse()
     args = parser.parse_args()
     try:
-        combine_images(args.indir, args.outdir)
+        combine_images(args.indir, args.outdir, args.force, args.skip)
     except Exception as err:
         print(err)
         exit(1)
