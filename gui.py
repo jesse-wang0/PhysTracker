@@ -1,7 +1,9 @@
 import tkinter as tk
 from tkinter import filedialog
+from PIL import ImageTk, Image
 import subprocess
-import shlex
+import cv2
+import os
 
 global input_path, output_path, force, skip
 input_path = ""
@@ -9,20 +11,21 @@ output_path = ""
 force = False
 skip = 1
 
-def get_subprocess_output(cmd):
-    args = shlex.split(cmd)
-
-    proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    out, err = proc.communicate()
-    exitcode = proc.returncode
-    return exitcode, out, err
-
 def input_dialog():
-    global input_path
+    global input_path, image
     path = filedialog.askopenfilename()
     if path:
         selected_input_label.config(text=f"Selected File: {path}")
         label_input_error.config(text="")
+        vidcap = cv2.VideoCapture(path)
+        success, image = vidcap.read()
+        if success:
+            cv2.imwrite("first_frame.jpg",image)
+            image = Image.open("first_frame.jpg")
+            image = image.resize((100, 100), Image.LANCZOS)
+            image = ImageTk.PhotoImage(image)
+            image_label.config(image=image)
+            os.remove("first_frame.jpg")
         input_path = path
 
 def output_dialog():
@@ -46,10 +49,11 @@ def process_file():
     exitcode = 1
     if input_path and output_path:
         if force:
-            result = subprocess.run(["py", "extract_frame.py", "-i", input_path, 
+            #call function 
+            result = subprocess.Popen(["py", "extract_frame.py", "-i", input_path, 
                                     "-o", output_path, "-f"])
         else:
-            result = subprocess.run(["py", "extract_frame.py", "-i", input_path, 
+            result = subprocess.Popen(["py", "extract_frame.py", "-i", input_path, 
                                     "-o", output_path])
         exitcode = result.returncode
         if not exitcode:
@@ -66,14 +70,17 @@ root = tk.Tk()
 root.title("app test")
 
 frame_title = tk.Frame(relief="groove", bg="light gray")
-label = tk.Label(frame_title, text="Image Analysis Tool", font=("Arial", 20), bg="light gray")
+label = tk.Label(frame_title, text="Frame Extraction Tool", font=("Arial", 20), bg="light gray")
 label.pack(pady=15)
 
 frame_input = tk.Frame()
 input_button = tk.Button(frame_input, text="Open Video File", command=input_dialog)
 input_button.pack(padx=20, pady=20)
-selected_input_label = tk.Label(frame_input, text="Selected File:")
-selected_input_label.pack()
+frame_image = tk.Frame()
+selected_input_label = tk.Label(frame_image, text="Selected File:")
+selected_input_label.pack(side=tk.LEFT)
+image_label = tk.Label(frame_image)
+image_label.pack(side=tk.RIGHT)
 
 frame_output = tk.Frame()
 output_button = tk.Button(frame_output, text="Open Output Directory", command=output_dialog)
@@ -106,6 +113,7 @@ label_output_error.pack()
 
 frame_title.pack(fill=tk.BOTH, expand=tk.TRUE)
 frame_input.pack(fill=tk.BOTH)
+frame_image.pack()
 frame_output.pack()
 frame_process.pack()
 
