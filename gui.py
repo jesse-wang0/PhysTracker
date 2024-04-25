@@ -5,12 +5,28 @@ import subprocess
 import cv2
 import os
 
-global input_path, output_path, force, skip
+global current, input_path, output_path, force, skip
 input_path = ""
 output_path = ""
 force = False
 skip = 1
 
+def move(dirn):
+    global current
+    idx = pages.index(current) + dirn
+    if not 0 <= idx < len(pages):
+        return
+    current.pack_forget()
+    current = pages[idx]
+    current.pack(side=tk.TOP)
+
+def next():
+    move(+1)
+
+def prev():
+    move(-1)
+
+"""
 def input_dialog():
     global input_path, image
     path = filedialog.askopenfilename()
@@ -65,10 +81,55 @@ def process_file():
             label_input_error.config(text="Please provide input path", fg="red")
         if not output_path:
             label_output_error.config(text="Please provide output path", fg="red")            
-
+"""
 root = tk.Tk()
-root.title("app test")
+root.title("App")
 
+page1 = tk.Frame()
+tk.Label(page1, text='Welcome to the Tool').pack()
+page1.pack(side=tk.TOP)
+
+page2 = tk.Frame()
+tk.Label(page2, text='This is page 2 of the wizard.').pack()
+
+page3 = tk.Frame()
+tk.Label(page3, text='This is page 3. It has an entry widget too!').pack()
+
+pages = [page1, page2, page3]
+current = page1
+
+buttons = tk.Frame()
+tk.Button(buttons, text='Previous', command=prev).pack(side=tk.LEFT)
+tk.Button(buttons, text='Next', command=next).pack(side=tk.LEFT)
+
+menubar = tk.Menu(root)
+filemenu = tk.Menu(menubar, tearoff=0)
+filemenu.add_command(label="New")
+filemenu.add_command(label="Open")
+filemenu.add_command(label="Save")
+filemenu.add_separator()
+filemenu.add_command(label="Exit", command=root.quit)
+menubar.add_cascade(label="File", menu=filemenu)
+
+helpmenu = tk.Menu(menubar, tearoff=0)
+helpmenu.add_command(label="Help Index")
+helpmenu.add_command(label="About...")
+menubar.add_cascade(label="Help", menu=helpmenu)
+root.config(menu=menubar)
+
+buttons.pack(side=tk.BOTTOM)
+
+root.geometry("600x400")
+root.mainloop()
+
+
+
+
+
+
+
+
+"""
 frame_title = tk.Frame(relief="groove", bg="light gray")
 label = tk.Label(frame_title, text="Frame Extraction Tool", font=("Arial", 20), bg="light gray")
 label.pack(pady=15)
@@ -116,7 +177,4 @@ frame_input.pack(fill=tk.BOTH)
 frame_image.pack()
 frame_output.pack()
 frame_process.pack()
-
-root.geometry("600x400")
-
-root.mainloop()
+"""
