@@ -11,14 +11,13 @@ output_path = ""
 force = False
 skip = 1
 
-def move(dirn):
+def move(direction):
     global current
-    idx = pages.index(current) + dirn
-    if not 0 <= idx < len(pages):
-        return
-    current.pack_forget()
-    current = pages[idx]
-    current.pack(side=tk.TOP)
+    idx = pages.index(current) + direction
+    if 0 <= idx < len(pages):
+        current.pack_forget()
+        current = pages[idx]
+        current.pack(side=tk.TOP)
 
 def next():
     move(+1)
@@ -26,12 +25,11 @@ def next():
 def prev():
     move(-1)
 
-"""
 def input_dialog():
     global input_path, image
-    path = filedialog.askopenfilename()
+    path = filedialog.askopenfilename(filetypes=[('Video Files', '*.mp4')])
     if path:
-        selected_input_label.config(text=f"Selected File: {path}")
+        selected_input_label.config(text=f"Selected video file: {path}")
         label_input_error.config(text="")
         vidcap = cv2.VideoCapture(path)
         success, image = vidcap.read()
@@ -42,6 +40,8 @@ def input_dialog():
             image = ImageTk.PhotoImage(image)
             image_label.config(image=image)
             os.remove("first_frame.jpg")
+            help_msg.destroy()
+            next_button_p1['state'] = 'active'
         input_path = path
 
 def output_dialog():
@@ -51,7 +51,8 @@ def output_dialog():
         selected_output_label.config(text=f"Selected Directory: {path}")
         label_output_error.config(text="")
         output_path = path
-
+        process_button['state'] = 'active'
+"""
 def apply_force():
     global force
     force = not force
@@ -60,12 +61,12 @@ def apply_force():
 def skip_frame():
     global skip
     skip = spinbox_skip.get()
-
+"""
 def process_file():
     exitcode = 1
     if input_path and output_path:
         if force:
-            #call function 
+            #call function asynchronously
             result = subprocess.Popen(["py", "extract_frame.py", "-i", input_path, 
                                     "-o", output_path, "-f"])
         else:
@@ -74,6 +75,7 @@ def process_file():
         exitcode = result.returncode
         if not exitcode:
             label_success.config(text="Process Successful", fg="green")
+            next_button_p2['state'] = 'active'
         else:
             label_success.config(text="Unsuccessful", fg="red")
     else:
@@ -81,53 +83,76 @@ def process_file():
             label_input_error.config(text="Please provide input path", fg="red")
         if not output_path:
             label_output_error.config(text="Please provide output path", fg="red")            
-"""
+
 root = tk.Tk()
 root.title("App")
 
 page1 = tk.Frame()
-tk.Label(page1, text='Welcome to the Tool').pack()
+help_msg = tk.Label(page1, text="Welcome to my Tool. \n Please select a video to analyse.")
+help_msg.pack()
+selected_input_label = tk.Label(page1)
+selected_input_label.pack()
+label_input_error = tk.Label(page1)
+label_input_error.pack()
+image_label = tk.Label(page1)
+image_label.pack()
+
+buttons = tk.Frame(page1)
+back_button_p1 = tk.Button(buttons, text='Previous', command=prev)
+back_button_p1['state'] = 'disabled'
+back_button_p1.pack(side=tk.LEFT)
+next_button_p1 = tk.Button(buttons, text='Next', command=next)
+next_button_p1['state'] = 'disabled'
+next_button_p1.pack(side=tk.LEFT)
+buttons.pack(side=tk.BOTTOM)
 page1.pack(side=tk.TOP)
 
+
 page2 = tk.Frame()
-tk.Label(page2, text='This is page 2 of the wizard.').pack()
+tk.Label(page2, text='Please select an output path').pack()
+tk.Button(page2, text="Open Output Directory", command=output_dialog).pack()
+selected_output_label = tk.Label(page2)
+selected_output_label.pack()
+label_output_error = tk.Label(page2)
+label_output_error.pack()
+label_success = tk.Label(page2)
+label_success.pack()
+
+buttons = tk.Frame(page2)
+tk.Button(buttons, text='Previous', command=prev).pack(side=tk.LEFT)
+process_button = tk.Button(buttons, text='Process', command=process_file)
+process_button.pack(side=tk.LEFT)
+process_button['state'] = 'disabled'
+process_button.pack(side=tk.LEFT)
+next_button_p2 = tk.Button(buttons, text='Next', command=next)
+next_button_p2['state'] = 'disabled'
+next_button_p2.pack(side=tk.LEFT)
+buttons.pack(side=tk.BOTTOM)
+
 
 page3 = tk.Frame()
-tk.Label(page3, text='This is page 3. It has an entry widget too!').pack()
+tk.Label(page3, text='').pack()
+
 
 pages = [page1, page2, page3]
 current = page1
 
-buttons = tk.Frame()
-tk.Button(buttons, text='Previous', command=prev).pack(side=tk.LEFT)
-tk.Button(buttons, text='Next', command=next).pack(side=tk.LEFT)
-
+#Menubar initialisation
 menubar = tk.Menu(root)
 filemenu = tk.Menu(menubar, tearoff=0)
-filemenu.add_command(label="New")
-filemenu.add_command(label="Open")
-filemenu.add_command(label="Save")
+filemenu.add_command(label="New File")
+filemenu.add_command(label="Open Video File", command=input_dialog)
 filemenu.add_separator()
 filemenu.add_command(label="Exit", command=root.quit)
 menubar.add_cascade(label="File", menu=filemenu)
 
 helpmenu = tk.Menu(menubar, tearoff=0)
-helpmenu.add_command(label="Help Index")
-helpmenu.add_command(label="About...")
+helpmenu.add_command(label="About")
 menubar.add_cascade(label="Help", menu=helpmenu)
 root.config(menu=menubar)
 
-buttons.pack(side=tk.BOTTOM)
-
 root.geometry("600x400")
 root.mainloop()
-
-
-
-
-
-
-
 
 """
 frame_title = tk.Frame(relief="groove", bg="light gray")
