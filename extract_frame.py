@@ -39,11 +39,15 @@ def to_image(video_path, output_path, force_flag, frame_skip):
     if not str(input_abs_path).endswith(".mp4"):
         raise ValueError(f"Input is not an mp4 file.")
 
-    
     if os.path.exists(output_abs_path):
-        if not force_flag:
-            if not is_dir_empty(output_abs_path):
+        if not is_dir_empty(output_abs_path):
+            if not force_flag:
                 raise IOError(f"Files already exist in {output_abs_path}.")
+            else:
+                for filename in os.listdir(output_abs_path):
+                    file_path = os.path.join(output_abs_path, filename)
+                    if filename[-4:].lower() == ".jpg":
+                        os.unlink(file_path)
     else:
         raise FileNotFoundError(f"{output_abs_path} does not exist.")
 
@@ -107,6 +111,7 @@ def main() -> None:
     args = parser.parse_args()
     try:
         fps, frame_delta_t = to_image(args.infile, args.outdir, args.force, args.skip)
+        print(f"Skip frames: {args.skip}")
         print(f"frame_rate = {fps}")
         print(f"frame_delta_t = {frame_delta_t}")
         exit(0)

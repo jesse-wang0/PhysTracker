@@ -18,7 +18,7 @@ def is_dir_empty(path):
         return next(scan, None) is None
     
 
-def combine_images(input_path, output_path, force_flag, frame_skip):
+def combine_images(input_path, output_path, force_flag):
     '''Takes frames and computes difference between them, and combines these differences into one image.
 
     Parameters:
@@ -27,8 +27,8 @@ def combine_images(input_path, output_path, force_flag, frame_skip):
     '''
     input_abs_path = input_path[0].resolve()
     output_abs_path = output_path[0].resolve()
-    count = len(os.listdir(input_abs_path))
-    if count < 1:
+    img_files = os.listdir(input_abs_path)
+    if len(img_files) < 1:
         raise IOError("Frames folder is empty")
         
     if os.path.exists(output_abs_path):
@@ -37,10 +37,10 @@ def combine_images(input_path, output_path, force_flag, frame_skip):
                 raise IOError(f"Files already exist in {output_abs_path}.")
     else:
         raise FileNotFoundError(f"{output_abs_path} does not exist.")
-    
-    for i in range(0, count-1, frame_skip): #control how many frame skipped
-        img1 = cv.imread(f"{input_abs_path}/{str(i).zfill(4)}.jpg")
-        img2 = cv.imread(f"{input_abs_path}/{str(i+1).zfill(4)}.jpg")
+
+    for i in range(0, len(img_files)-1):
+        img1 = cv.imread(f"{input_abs_path}/{img_files[i]}")
+        img2 = cv.imread(f"{input_abs_path}/{img_files[i+1]}")
         difference = cv.absdiff(img1, img2)
 
         greyscaled = cv.cvtColor(difference, cv.COLOR_BGR2GRAY)
@@ -50,19 +50,22 @@ def combine_images(input_path, output_path, force_flag, frame_skip):
     
     img = cv.imread(f"{output_abs_path}/diff0.png", 0)
     
-    for x in range(0, count-1, frame_skip):
+    total_list = []
+    for x in range(0, len(img_files)-1): 
+        list_trial = []
         img_name = f"{output_abs_path}/diff{x}.png"
         print('Processing:', img_name)
         nxt = cv.imread(img_name, 0)
         for i, row in enumerate(img):
             for j, pixel in enumerate(row):
                 d = int(img[i][j]) - int(nxt[i][j])
-                if abs(d) > 12: #2 successive frames, mayeb another tool to calc 
+                if abs(d) > 60: #2 successive frames, mayeb another tool to calc
                     img[i][j] = 255
+                    list_trial.append((i,j))
                 else:
                     img[i][j] = (int(img[i][j]) + int(nxt[i][j]))/2
         os.remove(f"{output_abs_path}/diff{x}.png")
-    
+
     for i, row in enumerate(img):
         for j, pixel in enumerate(row):
             if img[i][j] < 255:
@@ -74,7 +77,7 @@ def init_argparse() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         usage="""%(prog)s [[-v|--version] | [-h|--help]] 
         | [-i|--indir <input-file-path> -o|--outdir <output-file-path>] 
-        | [-f|--force] | [-s|--skip]""",
+        | [-f|--force]""",
         description="Takes frames and combines them into one photo"
     )
     parser.add_argument(
@@ -93,20 +96,17 @@ def init_argparse() -> argparse.ArgumentParser:
         "-f", "--force", action=argparse.BooleanOptionalAction, type=bool,
         help = "Force writes to directory with pre-existing files and overwrites old files."
     )
-    parser.add_argument(
-        "-s", "--skip", action="store", default="1", type=int,
-        help = "Choose interval of frames to process."
-    )
     return parser
 
 def main() -> None:
     parser = init_argparse()
     args = parser.parse_args()
     try:
-        combine_images(args.indir, args.outdir, args.force, args.skip)
+        combine_images(args.indir, args.outdir, args.force)
+        exit(0)
     except Exception as err:
         print(err)
         exit(1)
-        
+
 if __name__ == "__main__":
     main()
