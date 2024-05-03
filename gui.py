@@ -5,11 +5,12 @@ import subprocess
 import cv2
 import os
 
-global current, input_path, output_path, force, skip
+global current, input_path, output_path, force, skip, video, frame_count, current_frame
 input_path = ""
 output_path = ""
 force = False
 skip = 1
+current_frame = 1
 
 def move(direction):
     global current
@@ -26,23 +27,26 @@ def prev():
     move(-1)
 
 def input_dialog():
-    global input_path, image
+    global input_path, image, video, frame_count
     path = filedialog.askopenfilename(filetypes=[('Video Files', '*.mp4')])
     if path:
         selected_input_label.config(text=f"Selected video file: {path}")
         label_input_error.config(text="")
-        vidcap = cv2.VideoCapture(path)
-        success, image = vidcap.read()
-        if success:
-            cv2.imwrite("first_frame.jpg",image)
-            image = Image.open("first_frame.jpg")
-            image = image.resize((100, 100), Image.LANCZOS)
-            image = ImageTk.PhotoImage(image)
-            image_label.config(image=image)
-            os.remove("first_frame.jpg")
-            help_msg.destroy()
-            next_button_p1['state'] = 'active'
+        video = cv2.VideoCapture(path)
+        frame_count = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
+        video.set(cv2.CAP_PROP_POS_FRAMES, 0)
+        res, initial_frame = video.read()
+        image = cv2.resize(initial_frame, (500,300), interpolation = cv2.INTER_LINEAR)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        image = Image.fromarray(image)
+        tk_img = ImageTk.PhotoImage(image=image) 
+        image_label.image = tk_img
+        image_label.configure(image=tk_img)
+        frame_count_label.config(text=f"Selected frame: {current_frame}/{frame_count}")
+        next_button_p1['state'] = 'active'
+        add_skip_buttons()
         input_path = path
+        help_msg.destroy()
 
 def output_dialog():
     global output_path
@@ -84,9 +88,39 @@ def process_file():
         if not output_path:
             label_output_error.config(text="Please provide output path", fg="red")            
 
+def skip_frame(num):
+    global current_frame
+
+    cap = cv2.VideoCapture(input_path)
+    cap.set(cv2.CAP_PROP_POS_FRAMES, current_frame + num - 1)
+    res, frame = cap.read()
+    image = cv2.resize(frame, (500,300), interpolation = cv2.INTER_LINEAR)
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    image = Image.fromarray(image)
+    tk_img = ImageTk.PhotoImage(image=image) 
+    image_label.image = tk_img
+    image_label.configure(image=tk_img)
+    frame_count_label.config(text=f"Selected frame: {current_frame+num}/{frame_count}")
+    current_frame += num
+
+def add_skip_buttons(): 
+    back5_button = tk.Button(skip_frames_frame, text='<<<<<', command=lambda: skip_frame(-5))
+    back5_button.pack(side=tk.LEFT)
+    back3_button = tk.Button(skip_frames_frame, text='<<<', command=lambda: skip_frame(-3))
+    back3_button.pack(side=tk.LEFT)
+    back1_button = tk.Button(skip_frames_frame, text='<', command=lambda: skip_frame(-1))
+    back1_button.pack(side=tk.LEFT)
+    skip1_button = tk.Button(skip_frames_frame, text='>', command=lambda: skip_frame(1))
+    skip1_button.pack(side=tk.LEFT)
+    skip3_button = tk.Button(skip_frames_frame, text='>>>', command=lambda: skip_frame(3))
+    skip3_button.pack(side=tk.LEFT)
+    skip5_button = tk.Button(skip_frames_frame, text='>>>>>', command=lambda: skip_frame(5))
+    skip5_button.pack(side=tk.LEFT)
+
 root = tk.Tk()
 root.title("App")
 
+# Page 1: Video input
 page1 = tk.Frame()
 help_msg = tk.Label(page1, text="Welcome to my Tool. \n Please select a video to analyse.")
 help_msg.pack()
@@ -94,19 +128,22 @@ selected_input_label = tk.Label(page1)
 selected_input_label.pack()
 label_input_error = tk.Label(page1)
 label_input_error.pack()
+frame_count_label = tk.Label(page1)
+frame_count_label.pack()
+skip_frames_frame = tk.Frame(page1)
+skip_frames_frame.pack()
 image_label = tk.Label(page1)
 image_label.pack()
 
-buttons = tk.Frame(page1)
-back_button_p1 = tk.Button(buttons, text='Previous', command=prev)
+buttons_frame = tk.Frame(page1)
+back_button_p1 = tk.Button(buttons_frame, text='Previous', command=prev)
 back_button_p1['state'] = 'disabled'
 back_button_p1.pack(side=tk.LEFT)
-next_button_p1 = tk.Button(buttons, text='Next', command=next)
+next_button_p1 = tk.Button(buttons_frame, text='Next', command=next)
 next_button_p1['state'] = 'disabled'
 next_button_p1.pack(side=tk.LEFT)
-buttons.pack(side=tk.BOTTOM)
+buttons_frame.pack(side=tk.BOTTOM)
 page1.pack(side=tk.TOP)
-
 
 page2 = tk.Frame()
 tk.Label(page2, text='Please select an output path').pack()
@@ -137,7 +174,7 @@ tk.Label(page3, text='').pack()
 pages = [page1, page2, page3]
 current = page1
 
-#Menubar initialisation
+# Menubar initialisation
 menubar = tk.Menu(root)
 filemenu = tk.Menu(menubar, tearoff=0)
 filemenu.add_command(label="New File")
@@ -151,55 +188,5 @@ helpmenu.add_command(label="About")
 menubar.add_cascade(label="Help", menu=helpmenu)
 root.config(menu=menubar)
 
-root.geometry("600x400")
+root.geometry("800x500")
 root.mainloop()
-
-"""
-frame_title = tk.Frame(relief="groove", bg="light gray")
-label = tk.Label(frame_title, text="Frame Extraction Tool", font=("Arial", 20), bg="light gray")
-label.pack(pady=15)
-
-frame_input = tk.Frame()
-input_button = tk.Button(frame_input, text="Open Video File", command=input_dialog)
-input_button.pack(padx=20, pady=20)
-frame_image = tk.Frame()
-selected_input_label = tk.Label(frame_image, text="Selected File:")
-selected_input_label.pack(side=tk.LEFT)
-image_label = tk.Label(frame_image)
-image_label.pack(side=tk.RIGHT)
-
-frame_output = tk.Frame()
-output_button = tk.Button(frame_output, text="Open Output Directory", command=output_dialog)
-output_button.pack(padx=20, pady=20)
-selected_output_label = tk.Label(frame_output, text="Selected Directory:")
-selected_output_label.pack()
-
-frame_process = tk.Frame()
-test = tk.Frame(frame_process)
-label_options = tk.Label(frame_process, text="OPTIONS:", font=("Arial", 12))
-label_options.pack(pady=(20,0))
-label_force = tk.Label(test, text="Force:")
-label_force.pack(side=tk.LEFT)
-check_force = tk.Checkbutton(test, command=apply_force)
-check_force.pack(side=tk.LEFT)
-label_skip = tk.Label(test, text="Skip frame:")
-label_skip.pack(padx=(30,0), side=tk.LEFT)
-spinbox_skip = tk.Spinbox(test, from_= 1, to = 10, width=10, command=skip_frame) 
-spinbox_skip.pack(side=tk.LEFT)
-test.pack()
-
-start_button = tk.Button(frame_process, text="Start Processing", command=process_file)
-start_button.pack(padx=20, pady=(10,0))
-label_success = tk.Label(frame_process)
-label_success.pack()
-label_input_error = tk.Label(frame_process)
-label_input_error.pack()
-label_output_error = tk.Label(frame_process)
-label_output_error.pack()
-
-frame_title.pack(fill=tk.BOTH, expand=tk.TRUE)
-frame_input.pack(fill=tk.BOTH)
-frame_image.pack()
-frame_output.pack()
-frame_process.pack()
-"""
