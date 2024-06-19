@@ -1,14 +1,14 @@
-import sys, os
-import cv2
 import numpy as np
-import argparse
-import pathlib
+import sys, os, cv2, argparse, pathlib
+import matplotlib.pyplot as plt
+import numpy as np
 
 def detect_blobs(image_path):
     input_path = image_path[0].resolve()
     input_path = str(input_path)
 
     img = cv2.imread(input_path, cv2.IMREAD_GRAYSCALE)
+    image_height = img.shape[0]
     blurred = cv2.medianBlur(img, 5)
     adap_thresh = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
                                         cv2.THRESH_BINARY_INV, 17, 0)
@@ -34,11 +34,25 @@ def detect_blobs(image_path):
     detector = cv2.SimpleBlobDetector_create(params)
     # Detect blobs using the detector
     keypoints = detector.detect(dilated)
+
+    x_coords = np.zeros(len(keypoints))
+    y_coords = np.zeros(len(keypoints))
+    count = 0
+    for key_point in keypoints:
+        x = key_point.pt[0]
+        y = key_point.pt[1]
+        s = key_point.size
+        x_coords[count] = x
+        y_coords[count] = image_height - y
+        print(x,y,s)
+        count += 1
+
+    plt.plot(x_coords, y_coords, 'o')
+    plt.show()
+
     # Draw detected blobs as red circles
     img_with_keypoints = cv2.drawKeypoints(img, keypoints, np.array([]), (0, 0, 255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
     cv2.imwrite(f"final.png", img_with_keypoints)
-
-
 
 def init_argparse() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
