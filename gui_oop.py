@@ -3,6 +3,43 @@ from tkinter import filedialog
 from PIL import ImageTk, Image
 import cv2
 
+class VideoProcessor:
+    def __init__(self, video_path):
+        self.path = video_path
+        
+        self.video = cv2.VideoCapture(video_path)
+        self.total_frame_count = int(self.video.get(cv2.CAP_PROP_FRAME_COUNT)) - 1
+        self.current_frame_count = 0
+        if not self.video.isOpened():
+            raise ValueError("Error opening video file")
+
+    def get_current_frame_count(self):
+        return self.current_frame_count
+    
+    def get_total_frame_count(self):
+        return self.total_frame_count
+    
+    def get_next_frame(self, num):
+        new_frame = self.current_frame_count + num
+        if new_frame < 0:
+            new_frame = 0
+        elif new_frame > self.total_frame_count:
+            new_frame = self.total_frame_count
+
+        cap = cv2.VideoCapture(self.path)
+        cap.set(cv2.CAP_PROP_POS_FRAMES, new_frame)
+        res, frame = cap.read()
+        if res:
+            self.frame_image = self.render_image(frame) #keep reference to avoid garbage collection
+            self.current_frame_count = new_frame
+            return self.frame_image
+
+    def render_image(self, image):
+        image = cv2.resize(image, (500,300), interpolation = cv2.INTER_LINEAR)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        image = Image.fromarray(image)
+        return ImageTk.PhotoImage(image=image) 
+    
 class BottomButtons(tk.Frame):
     def __init__(self, parent, prev, next):
         super().__init__(parent)
@@ -90,31 +127,18 @@ class Page1(tk.Frame):
         self.help_msg.pack()
 
     def update_page(self, path):
-        self.current_frame = 0
         self.help_msg.pack_forget()
-        self.setup_video_preview(path)
+        self.vid_manager = VideoProcessor(path)
+        self.setup_video_preview()
         self.setup_spinbox()
         self.setup_skip_buttons()
 
-    def setup_video_preview(self, path):
-        self.path = path
-        self.video = cv2.VideoCapture(path)
-        self.frame_count = int(self.video.get(cv2.CAP_PROP_FRAME_COUNT)) - 1
-        self.frame_count_label = tk.Label(self, text=f"Selected frame: {self.current_frame} / {self.frame_count}")
+    def setup_video_preview(self):
+        self.frame_count_label = tk.Label(self, text=f"Selected frame: {self.vid_manager.get_current_frame_count()} / {self.vid_manager.get_total_frame_count()}")
         self.frame_count_label.pack(side=tk.TOP)
-        self.video.set(cv2.CAP_PROP_POS_FRAMES, 0)
-        res, initial_frame = self.video.read()
-        
         self.image_label = tk.Label(self)
-        self.frame_image = self.render_image(initial_frame) #keep reference to avoid garbage collection
-        self.image_label.config(image=self.frame_image)
+        self.image_label.config(image=self.vid_manager.get_next_frame(0))
         self.image_label.pack()
-    
-    def render_image(self, image):
-        image = cv2.resize(image, (500,300), interpolation = cv2.INTER_LINEAR)
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        image = Image.fromarray(image)
-        return ImageTk.PhotoImage(image=image) 
 
     def setup_spinbox(self):
         self.spinbox_text = tk.Label(self)
@@ -149,21 +173,8 @@ class Page1(tk.Frame):
         self.skip5_button.pack(side=tk.LEFT)
     
     def skip_frame(self, num):
-        new_frame = self.current_frame + num
-        if new_frame < 0:
-            new_frame = 0
-        elif new_frame > self.frame_count:
-            new_frame = self.frame_count
-
-        cap = cv2.VideoCapture(self.path)
-        cap.set(cv2.CAP_PROP_POS_FRAMES, new_frame)
-        res, frame = cap.read()
-        if res:
-            self.frame_image = self.render_image(frame) #keep reference to avoid garbage collection
-            self.image_label.config(image=self.frame_image)
-            
-            self.frame_count_label.config(text=f"Selected frame: {new_frame} / {self.frame_count}")
-            self.current_frame = new_frame
+        self.image_label.config(image=self.vid_manager.get_next_frame(num))
+        self.frame_count_label.config(text=f"Selected frame: {self.vid_manager.get_current_frame_count()} / {self.vid_manager.get_total_frame_count()}")
 
 class Page2(tk.Frame):
     def __init__(self, parent):
