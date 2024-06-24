@@ -1,4 +1,4 @@
-import cv2, os, argparse, pathlib, sys
+import cv2, os, argparse, pathlib, sys, csv
 from tabulate import tabulate
 from blob_detection import setup_detector
 
@@ -50,6 +50,11 @@ def get_positions(frames_path, avg_img_path, frame_duration,
         rows.append([i*frame_duration, x_coords[i], y_coords[i]])
     table = tabulate(rows, headers, tablefmt="grid")
     print(table)
+
+    with open('position_data.csv', 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerows(rows)
+
 
 def tuple_type(strings):
     strings = strings.replace("(", "").replace(")", "")
