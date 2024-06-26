@@ -82,7 +82,8 @@ class VideoProcessor:
                 pixel_length = math.sqrt((self.points[1][0] - self.points[0][0]) ** 2 + (self.points[1][1] - self.points[0][1]) ** 2)
                 cv2.setMouseCallback("scale_window", lambda *args: None)  # Disable further callbacks
 
-                real_world_length = simpledialog.askfloat("Input", "Enter the real-world length (meters) of the line:")
+                real_world_length = simpledialog.askfloat("Input", 
+                                                          "Enter the real-world length (meters) of the line:")
                 if real_world_length is not None:
                     self.scale = real_world_length / pixel_length
                     cv2.destroyAllWindows()
