@@ -3,17 +3,18 @@ from PIL import ImageTk, Image
 from tkinter import simpledialog
 
 class VideoProcessor:
-    def __init__(self, video_path):
-        self.vid_path = video_path
-        
-        self.video = cv2.VideoCapture(video_path)
+    def __init__(self):
+        self.roi_1 = None
+        self.roi_2 = None
+        self.scale = None
+
+    def set_video(self, path):
+        self.vid_path = path
+        self.video = cv2.VideoCapture(path)
         self.total_frame_count = int(self.video.get(cv2.CAP_PROP_FRAME_COUNT)) - 1
         self.current_frame_count = 0
         if not self.video.isOpened():
             raise ValueError("Error opening video file")
-        self.roi_1 = None
-        self.roi_2 = None
-        self.scale = None
 
     def get_vid_path(self):
         return self.vid_path
@@ -96,4 +97,3 @@ class VideoProcessor:
     
     def get_scale(self):
         return self.scale
-    

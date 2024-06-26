@@ -1,9 +1,10 @@
 import tkinter as tk
 
 class Page1(tk.Frame):
-    def __init__(self, parent, control_btns, **kwargs):
+    def __init__(self, parent, control_btns, vid_manager, **kwargs):
         super().__init__(parent, **kwargs)
         self.control_btns = control_btns
+        self.vid_manager = vid_manager
         self.help_msg = tk.Label(self, text="""Welcome to my Tool. 
                                     \n Please select a video to analyse.""")
         self.help_msg.pack()
@@ -17,11 +18,11 @@ class Page1(tk.Frame):
         return self.vid_manager.get_path()
     
     def setup_page(self, path):
-        self.vid_manager = VideoProcessor(path)
+        self.vid_manager.set_video(path)
         self.setup_video_preview()
         self.setup_spinbox()
         self.setup_skip_buttons()
-        self.help_msg.config(text="Stage 1: Setup")                                  
+        self.help_msg.config(text="Stage 1: Setup")
         self.setup_roi()
         self.setup_scale()
         self.content_container.pack(fill=tk.BOTH)
