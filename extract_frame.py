@@ -23,8 +23,8 @@ def is_dir_empty(path):
     '''
     with os.scandir(path) as scan:
         return next(scan, None) is None
-    
-def to_image(video_path, output_path, force_flag, frame_skip):
+
+def to_image(video_path, output_path, frame_skip, force_flag):
     '''Converts mp4 video into individual frames and stores in 
     provided output path.
 
@@ -67,16 +67,17 @@ def to_image(video_path, output_path, force_flag, frame_skip):
                 result_average = image.copy()
             else:
                 if image is not None:
-                    result_average = result_average * (count / (count+1)) + image * (1 / (count+1))
+                    result_average = result_average * (count / (count+1)) \
+                                     + image * (1 / (count+1))
 
             if not read_success:
                 if count <= 0:
-                    raise ExtractFrameException(f"""Unable to read any 
-                                                frames from {input_abs_path}.""")
+                    raise ExtractFrameException(f"""Unable to read any frames \
+                                                from {input_abs_path}.""")
                 break #TODO: how do we detect error in vid.read()
             print('Read a new frame: ', read_success, file=sys.stderr)
             if count%frame_skip == 0:
-                write_path = f"{output_abs_path}/{str(count).zfill(5)}.jpg"
+                write_path = f"{output_abs_path}{os.sep}{str(count).zfill(5)}.jpg"
                 write_success = cv2.imwrite(write_path, image) # save as JPEG
             if not write_success:
                 raise ExtractFrameException(f"Unable to save to jpg.")
@@ -84,49 +85,41 @@ def to_image(video_path, output_path, force_flag, frame_skip):
             raise ExtractFrameException(f"""Exception converting image \
                                         jpg format. {e}""")
         count += 1
-    print(result_average)
-    cv2.imwrite(f"{output_abs_path}/average.jpg", result_average)
+    cv2.imwrite(f"{output_abs_path}{os.sep}average.jpg", result_average)
     return fps, frame_delta_t
 
 def init_argparse() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        usage=(
-            "%(prog)s [[-v|--version] | [-h|--help]] "
-            "| [-i|--infile <input-file-path> -o|--outdir <output-file-path>] "
-            "| [-f|--force] | [-s|--skip]"
-        ),
-        description="Converts mp4 video into photo"
+    parser = argparse.ArgumentParser(prog=sys.argv[0],
+        usage="%(prog)s [-h] [-v] -i INPUT_PATH -o OUTPUT_PATH -s SKIP_NUM [-f]", 
+        add_help=False,
+    description="Converts mp4 video into photo"
     )
-    parser.add_argument(
-        "-v", "--version", action="version",
-        version=f"{parser.prog} version 1.0.0"
-    )
-    parser.add_argument(
-        "-i", "--infile", action="store", type=pathlib.Path,
-        help = "Full path to an mp4 file"
-    )
-    parser.add_argument(
-        "-o", "--outdir", action="store", type=pathlib.Path,
-        help = """Empty directory to store frames in. Output = nnnn.jpg \
-                    and starts from 0000 onwards"""
-    )
-    parser.add_argument(
-        "-f", "--force", action=argparse.BooleanOptionalAction, type=bool,
-        help = """Force writes to directory with pre-existing files \
-                    and overwrites old files."""
-    )
-    parser.add_argument(
-        "-s", "--skip", action="store", default="1", type=int,
-        help = "Choose interval of frames to process."
-    )
+
+    required = parser.add_argument_group('required arguments')
+    required.add_argument("-i", "--infile", action="store", type=pathlib.Path, 
+                          required=True, help = "Full path to an mp4 file")
+    required.add_argument("-o", "--outdir", action="store", type=pathlib.Path, 
+                          required=True, help = """Empty directory to store frames in. \
+                          Output = nnnn.jpg and starts from 0000 onwards""")
+    required.add_argument("-s", "--skip", action="store", default="1", type=int, 
+                          required=True, help = "Choose interval of frames to process.")
+
+    optional = parser.add_argument_group('optional arguments')
+    optional.add_argument("-h", "--help", action="help", 
+                          help="show this help message and exit")
+    optional.add_argument("-v", "--version", action="version", 
+                        version=f"{parser.prog} version 1.0.0")
+    optional.add_argument("-f", "--force", action=argparse.BooleanOptionalAction, \
+                        type=bool, help = """Force writes to directory with pre-existing files \
+                    and overwrites old files.""")
     return parser
 
 def main() -> None:
     parser = init_argparse()
     args = parser.parse_args()
     try:
-        fps, frame_delta_t = to_image(args.infile, args.outdir, 
-                                        args.force, args.skip)
+        fps, frame_delta_t = to_image(args.infile, args.outdir, args.skip, 
+                                      args.force)
         print(f"Skip frames: {args.skip}")
         print(f"frame_rate = {fps}")
         print(f"frame_delta_t = {frame_delta_t}")

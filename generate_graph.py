@@ -28,7 +28,7 @@ def show_plot(csv_file, plot_type):
                         'X Velocity (m/s)', 'X Velocity vs Time')
     elif plot_type == 'y_velocity':
         y_velocity = calculate_velocity(y_coords, times)
-        plot_generic(np_times, y_velocity, 'Time (seconds)', 
+        plot_generic(np_times[1:], y_velocity, 'Time (seconds)', 
                         'Y Velocity (m/s)', 'Y Velocity vs Time')
     elif plot_type == 'x_acceleration':
         x_acceleration = calculate_acceleration(x_coords, times)
@@ -65,25 +65,22 @@ def calculate_acceleration(coord_list, time_list):
     return delta_v / delta_t
 
 def init_argparse() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        usage=(
-            "%(prog)s [[-v|--version] | [-h|--help]] "
-            "| [-i|--infile <input-file-path>] [-t|--type <plot-type>]"
-        ),
-        description="Converts mp4 video into photo"
-    )
-    parser.add_argument(
-        "-v", "--version", action="version",
-        version=f"{parser.prog} version 1.0.0"
-    )
-    parser.add_argument(
-        "-i", "--infile", action="store", type=pathlib.Path,
-        help = "Full path to the input CSV file"
-    )
-    parser.add_argument(
-        "-t", "--type", action="store", type=str,
-        help = "Type of plot to generate"
-    )
+    graph_choices = ["x", "y", "x_velocity", "y_velocity", "x_acceleration", "y_acceleration"]
+    parser = argparse.ArgumentParser(prog=sys.argv[0],
+    usage=f"%(prog)s [-h] [-v] -c CSV_FILE -t | --type {graph_choices}", 
+    add_help=False, description="Generates a range of different graphs based on CSV file provided")
+
+    required = parser.add_argument_group('required arguments')
+    required.add_argument("-i", "--infile", action="store", type=pathlib.Path,
+                          required=True, help = "Full path to the input CSV file")
+    required.add_argument("-t", "--type", type=str, choices=graph_choices, 
+                          required=True, help = "Type of plot to generate")
+
+    optional = parser.add_argument_group('optional arguments')
+    optional.add_argument("-h", "--help", action="help", 
+                          help="show this help message and exit")
+    optional.add_argument("-v", "--version", action="version", 
+                        version=f"{parser.prog} version 1.0.0")
     return parser
 
 def main() -> None:
