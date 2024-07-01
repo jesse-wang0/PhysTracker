@@ -1,6 +1,7 @@
 import sys, pathlib, cv2, argparse, math
 
-def calculate_threshold(image1_path, image2_path, dimensionX, dimensionY):
+def calculate_threshold(image1_path, image2_path, 
+                        dimensionX=None, dimensionY=None):
     input_path1 = str(image1_path.resolve())
     img1 = cv2.imread(input_path1, cv2.IMREAD_GRAYSCALE)
     
@@ -30,43 +31,33 @@ def calculate_threshold(image1_path, image2_path, dimensionX, dimensionY):
     return math.ceil(sum(differences)/len(differences))
 
 def init_argparse() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-         usage=(
-             "%(prog)s [-h] [-v] "
-             "| [-i|--infile <input-file-path>] "
-             "| [-j|--infile <input-file-path>] "
-             "|  [-x|--x-dimension <x-dimension> -y|--y-dimension <y-dimension>]"
-        ),
+    parser = argparse.ArgumentParser(prog=sys.argv[0],
+         usage="%(prog)s [-h] [-v] -p1 PATH1 -p2 PATH2 [-x X_TUPLE -y Y_TUPLE]", 
+         add_help=False,
         description="Calculates threshold value used in combine_images based off regions of 2 frames. Note: Both -x and -y must be provided together or not at all."
     )
-    parser.add_argument(
-        "-v", "--version", action="version",
-        version=f"{parser.prog} version 1.0.0"
-    )
-    parser.add_argument(
-        "-i", "--infile1", action="store", type=pathlib.Path, required=True,
-        help = "Full path to first frame"
-    )
-    parser.add_argument(
-        "-j", "--infile2", action="store", type=pathlib.Path, required=True,
-        help = "Full path to second frame"
-    )
-    parser.add_argument(
-        "-x", "--dimensionX", type=tuple_type,
-        help = "X dimensions used in calculation"
-    )
-    parser.add_argument(
-        "-y", "--dimensionY", type=tuple_type,
-        help = "Y dimensions used in calculation"
-    )
-    return parser
 
+    required = parser.add_argument_group('required arguments')
+    required.add_argument("-p1", "--path1", action="store", type=pathlib.Path, required=True,
+        help = "Full path to first frame")
+    required.add_argument("-p2", "--path2", action="store", type=pathlib.Path, required=True,
+        help = "Full path to second frame")
+    
+    optional = parser.add_argument_group('optional arguments')
+    optional.add_argument("-h", "--help", action="help", 
+                          help="show this help message and exit")
+    optional.add_argument("-v", "--version", action="version", 
+                        version=f"{parser.prog} version 1.0.0")
+    optional.add_argument("-x", "--dimensionX", type=tuple_type, 
+                        help = "X dimensions used in calculation (format: '(x1,x2)')")
+    optional.add_argument("-y", "--dimensionY", type=tuple_type,
+                        help = "Y dimensions used in calculation (format: '(y1,y2)')")
+    return parser
 
 def tuple_type(strings):
     strings = strings.replace("(", "").replace(")", "")
     mapped_int = map(int, strings.split(","))
     return tuple(mapped_int)
-
 
 def main() -> None:
     parser = init_argparse()
