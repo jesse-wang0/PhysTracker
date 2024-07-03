@@ -6,18 +6,26 @@ from tkinter import filedialog
 from video_manager import VideoProcessor
 from gui_pages.page1 import Page1
 from gui_pages.page2 import Page2
+from gui_pages.page3 import Page3
+from gui_pages.page4 import Page4
+from gui_pages.page5 import Page5
 
 class MainApplication(tk.Frame):
     def __init__(self, parent):
         super().__init__(parent)
-        self.parent = parent
+        parent.update()
+        width = parent.winfo_width()
+        height = parent.winfo_height()
         self.menubar = MenuBar(self)
         self.buttons = BottomButtons(self, self.prev, self.next)
-        self.vid_manager = VideoProcessor()
+        self.vid_manager = VideoProcessor((width, height))
 
         self.page1 = Page1(self, self.buttons, self.vid_manager)
         self.page2 = Page2(self, self.buttons, self.vid_manager)
-        self.pages = [self.page1, self.page2]
+        self.page3 = Page3(self, self.buttons, self.vid_manager)
+        self.page4 = Page4(self, self.buttons, self.vid_manager)
+        self.page5 = Page5(self, self.buttons, self.vid_manager)
+        self.pages = [self.page1, self.page2, self.page3, self.page4, self.page5]
         self.current = self.page1
 
         root.configure(menu=self.menubar)
@@ -38,6 +46,9 @@ class MainApplication(tk.Frame):
                 self.buttons.on_next()
         elif self.current == self.page2:
             self.buttons.on_back()
+        elif self.current == self.page3:
+            self.page3.setup_prereq()
+            self.buttons.on_back()
 
     def next(self):
         self.move(1)
@@ -48,14 +59,14 @@ class MainApplication(tk.Frame):
     def setup_page1(self, path):
         self.page1.setup_page(path)
 
-class BottomButtons(tk.Frame):
+class BottomButtons(tb.Frame):
     def __init__(self, parent, prev, next):
         super().__init__(parent)
-        self.next_button = tk.Button(self, text='Next', command=next)
+        self.next_button = tb.Button(self, text='Next', command=next)
         self.next_button['state'] = 'disabled'
         self.next_button.pack(side=tk.RIGHT, padx=(0, 20), pady=(0, 10))
 
-        self.back_button = tk.Button(self, text='Previous', command=prev)
+        self.back_button = tb.Button(self, text='Previous', command=prev)
         self.back_button['state'] = 'disabled'
         self.back_button.pack(side=tk.RIGHT, pady=(0, 10))
 
@@ -78,7 +89,7 @@ class MenuBar(tk.Menu):
         self.filemenu = tk.Menu(self, tearoff=0)
         self.filemenu.add_command(label="New File")
         self.filemenu.add_command(label="Open Video File", 
-                                    command=self.input_dialog)
+                                  command=self.input_dialog)
         self.filemenu.add_separator()
         self.filemenu.add_command(label="Exit", command=parent.quit)
         self.add_cascade(label="File", menu=self.filemenu)
@@ -89,8 +100,8 @@ class MenuBar(tk.Menu):
             self.parent.setup_page1(path)
 
 if __name__ == "__main__":
-    root = tk.Tk()
+    root = tb.Window(themename="litera")
     root.title("App")
-    root.geometry("800x500")
+    root.geometry("1000x600")
     MainApplication(root).pack(side="top", fill="both", expand=True)
     root.mainloop()
