@@ -2,7 +2,7 @@ import cv2, os, argparse, pathlib, sys, csv
 from tabulate import tabulate
 from blob_detection import setup_detector
 
-def get_positions(frames_path, frame_duration, roi, meters_per_pixel,
+def get_positions(frames_path, frame_duration, roi, scale,
                   avg_file_name="average.jpg"):
     avg_background_path = str(frames_path.resolve()) + os.sep + avg_file_name
     average_background = cv2.imread(avg_background_path)
@@ -14,6 +14,9 @@ def get_positions(frames_path, frame_duration, roi, meters_per_pixel,
     image_height = average_background.shape[0]
 
     for path in img_paths:
+        name, ext = os.path.splitext(path)
+        if ext.lower() not in ('.jpg', '.png'):
+            continue
         img = cv2.imread(f"{input_path}{os.sep}{path}")
         difference = cv2.absdiff(img, average_background)
         difference = cv2.cvtColor(difference, cv2.COLOR_BGR2GRAY)
@@ -39,9 +42,9 @@ def get_positions(frames_path, frame_duration, roi, meters_per_pixel,
                 if size > max_area:
                     max_area_point = key_point
         if max_area_point is not None:
-            x_coords.append(max_area_point.pt[0] * meters_per_pixel)
+            x_coords.append(max_area_point.pt[0] * scale)
             y_coords.append((image_height - max_area_point.pt[1]) 
-                             * meters_per_pixel)
+                             * scale)
     
     headers = ["Time (seconds)", "x (meters)", "y (meters)"]
     rows = []
@@ -51,7 +54,12 @@ def get_positions(frames_path, frame_duration, roi, meters_per_pixel,
     table = tabulate(rows, headers, tablefmt="grid")
     print(table)
 
-    with open('position_data.csv', 'w', newline='') as csvfile:
+    output_path = f"{input_path}{os.sep}data"
+    if not os.path.exists(output_path):
+        os.mkdir(output_path)
+            
+    with open(f"{output_path}{os.sep}position_data.csv", "w", 
+              newline="") as csvfile:
         writer = csv.writer(csvfile)
         writer.writerows(rows)
 
@@ -89,7 +97,7 @@ def main() -> None:
     parser = init_argparse()
     args = parser.parse_args()
     try:
-        get_positions(args.indir, args.duration_frame, 
+        get_positions(args.inpath, args.duration_frame, 
                       args.roi, args.meter_per_pixel, args.avg_img)
         exit(0)
     except Exception as err:
