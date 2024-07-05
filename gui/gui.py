@@ -25,7 +25,8 @@ class MainApplication(tk.Frame):
         self.page3 = Page3(self, self.buttons, self.vid_manager)
         self.page4 = Page4(self, self.buttons, self.vid_manager)
         self.page5 = Page5(self, self.buttons, self.vid_manager)
-        self.pages = [self.page1, self.page2, self.page3, self.page4, self.page5]
+        self.pages = [self.page1, self.page2, self.page3, 
+                      self.page4, self.page5]
         self.current = self.page1
 
         root.configure(menu=self.menubar)
@@ -44,11 +45,14 @@ class MainApplication(tk.Frame):
         if self.current == self.page1:
             if self.page1.can_next():
                 self.buttons.on_next()
-        elif self.current == self.page2:
+        else:
             self.buttons.on_back()
-        elif self.current == self.page3:
-            self.page3.setup_prereq()
-            self.buttons.on_back()
+            if self.current.can_next():
+                self.buttons.on_next()
+            if self.current == self.page5:
+                self.page5.add_table_values(self.vid_manager.get_csv_path())
+            elif self.current == self.page3:
+                 self.page3.setup_prereq()
 
     def next(self):
         self.move(1)
