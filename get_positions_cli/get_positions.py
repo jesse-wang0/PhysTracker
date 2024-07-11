@@ -13,6 +13,7 @@ def get_positions(frames_path, frame_duration, roi, scale,
     y_coords = []
     image_height = average_background.shape[0]
 
+    count = 0
     for path in img_paths:
         name, ext = os.path.splitext(path)
         if ext.lower() not in ('.jpg', '.png'):
@@ -34,35 +35,38 @@ def get_positions(frames_path, frame_duration, roi, scale,
             y = key_point.pt[1]
             size = key_point.size
 
-            x1 = roi[0]
-            x2 = roi[1]
-            y1 = roi[2]
-            y2 = roi[3]
-            if x1 < x < x2 and y1 < y < y2:
+            roi_x = roi[0]
+            roi_y = roi[1]
+            roi_w = roi[2]
+            roi_h = roi[3]
+
+            if (roi_x < x < roi_x + roi_w) and (roi_y < y < roi_y + roi_h):
                 if size > max_area:
                     max_area_point = key_point
         if max_area_point is not None:
             x_coords.append(max_area_point.pt[0] * scale)
-            y_coords.append((image_height - max_area_point.pt[1]) 
-                             * scale)
-    
+            y_coords.append((image_height - max_area_point.pt[1]) * scale)
+        print(f"Processing: {count}/{len(img_paths) - 1}", file=sys.stderr)
+        count += 1
+
     headers = ["Time (seconds)", "x (meters)", "y (meters)"]
     rows = []
-    #just used x_coords, as both x and y lists are same size
-    for i in range(len(x_coords)): 
-        rows.append([i*frame_duration, x_coords[i], y_coords[i]])
+    for i in range(len(x_coords)):
+        rows.append([i * frame_duration, x_coords[i], y_coords[i]])
+
     table = tabulate(rows, headers, tablefmt="grid")
-    print(table)
+    print(table, file=sys.stdout)
 
     output_path = f"{input_path}{os.sep}data"
     if not os.path.exists(output_path):
         os.mkdir(output_path)
-            
-    with open(f"{output_path}{os.sep}position_data.csv", "w", 
-              newline="") as csvfile:
+
+    with open(f"{output_path}{os.sep}position_data.csv", "w", newline="") as csvfile:
         writer = csv.writer(csvfile)
         writer.writerows(rows)
 
+    print("Process complete", flush=True)
+    
 def tuple_type(strings):
     strings = strings.replace("(", "").replace(")", "")
     mapped_int = map(int, strings.split(","))
@@ -79,7 +83,7 @@ def init_argparse() -> argparse.ArgumentParser:
     required.add_argument("-d", "--duration_frame", action="store", type=float,
                           required=True, help = "Duration of time apart of each frame in seconds")
     required.add_argument("-r", "--roi", action="store", type=tuple_type,
-                          required=True, help = "Region of interest coordinates as tuple (x1, x2, y1, y2)")
+                          required=True, help = "Region of interest coordinates as tuple (x,y,w,h)")
     required.add_argument("-m", "--meter_per_pixel", action="store", type=float, 
                           required=True, help = "Meter per pixel conversion factor")
 
@@ -88,7 +92,8 @@ def init_argparse() -> argparse.ArgumentParser:
                           help="show this help message and exit")
     optional.add_argument("-v", "--version", action="version", 
                         version=f"{parser.prog} version 1.0.0")
-    optional.add_argument("-a", "--avg_img", action="store", type=str,
+    optional.add_argument("-a", "--avg_img", action="store", type=str, 
+                          default="average.jpg",
                           help = "Name of average image that will be used as base comparison")
     return parser
 

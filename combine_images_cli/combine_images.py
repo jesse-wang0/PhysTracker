@@ -4,20 +4,6 @@ import pathlib
 import cv2
 from PIL import Image
 
-def is_dir_empty(path):
-    '''Checks if directory provided is empty
-
-    Parameters:
-        path(str): Path to directory that will be checked.
-        
-    Return:
-        bool: True if dir emtpy, False otherwise.
-        
-    '''
-    with os.scandir(path) as scan:
-        return next(scan, None) is None
-    
-
 def combine_images(input_path, output_path, threshold, force_flag):
     """Takes frames and computes difference between them, and 
     combines these differences into one image.
@@ -41,6 +27,8 @@ def combine_images(input_path, output_path, threshold, force_flag):
         raise FileNotFoundError(f"{output_abs_path} does not exist.")
 
     for i in range(0, len(img_files)-1):
+        if img_files[i+1] == "average.jpg":
+            break
         img1 = cv2.imread(f"{input_abs_path}{os.sep}{img_files[i]}")
         img2 = cv2.imread(f"{input_abs_path}{os.sep}{img_files[i+1]}")
 
@@ -49,28 +37,40 @@ def combine_images(input_path, output_path, threshold, force_flag):
         cv2.imwrite(f"{output_abs_path}{os.sep}diff{i}.png", difference)
 
     img = cv2.imread(f"{output_abs_path}{os.sep}diff0.png", 0)
-    
-    for x in range(0, len(img_files)-1): 
-        list_trial = []
+    diff_len = len(os.listdir(output_abs_path))
+    for x in range(0, diff_len):
         img_name = f"{output_abs_path}{os.sep}diff{x}.png"
-        print("Processing: ", img_name)
         nxt = cv2.imread(img_name, 0)
         for i, row in enumerate(img):
             for j, pixel in enumerate(row):
                 d = int(img[i][j]) - int(nxt[i][j])
                 if abs(d) > threshold:
                     img[i][j] = 255
-                    list_trial.append((i,j))
                 else:
                     img[i][j] = (int(img[i][j]) + int(nxt[i][j]))/2
         os.remove(f"{output_abs_path}/diff{x}.png")
+        print(f"Processing: {x}/{diff_len - 1}")
 
     for i, row in enumerate(img):
         for j, pixel in enumerate(row):
             if img[i][j] < 255:
                 img[i][j] = 0
-    cv2.imwrite(f"{output_abs_path}{os.sep}final.png", img)
-    print("Image processing sucessful")
+    cv2.imwrite(f"{output_abs_path}{os.sep}mask.png", img)
+    print("Process complete", flush=True)
+
+def is_dir_empty(path):
+    '''Checks if directory provided is empty
+
+    Parameters:
+        path(str): Path to directory that will be checked.
+        
+    Return:
+        bool: True if dir emtpy, False otherwise.
+        
+    '''
+    with os.scandir(path) as scan:
+        return next(scan, None) is None
+    
 
 def init_argparse() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog=sys.argv[0],
@@ -100,7 +100,7 @@ def main() -> None:
     parser = init_argparse()
     args = parser.parse_args()
     try:
-        combine_images(args.indir, args.outdir, args.threshold, args.force)
+        combine_images(args.infile, args.outdir, args.threshold, args.force)
         exit(0)
     except Exception as err:
         print(err)

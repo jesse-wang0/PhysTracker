@@ -67,7 +67,7 @@ def main() -> None:
         parser.error("Both --dimension1 and --dimension2 must be provided together or not at all.")
         
     try:
-        calculate_threshold(args.infile1, args.infile2, args.dimensionX, 
+        calculate_threshold(args.path1, args.path2, args.dimensionX, 
                             args.dimensionY)
         exit(0)
     except Exception as err:
