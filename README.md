@@ -1,34 +1,10 @@
-# Introduction
-- Add your project logo.
-- Write a short introduction to the project.
-- If you are using badges, add them here.
+# PhysTracker
+A video analysis and modelling CLI tool/GUI for physics education purposes.
 
-## :ledger: Index
-
-- [About](#beginner-about)
-- [Usage](#zap-usage)
-  - [Installation](#electric_plug-installation)
-  - [Commands](#package-commands)
-- [Development](#wrench-development)
-  - [Pre-Requisites](#notebook-pre-requisites)
-  - [Developmen Environment](#nut_and_bolt-development-environment)
-  - [File Structure](#file_folder-file-structure)
-  - [Build](#hammer-build)  
-  - [Deployment](#rocket-deployment)  
-- [Community](#cherry_blossom-community)
-  - [Contribution](#fire-contribution)
-  - [Branches](#cactus-branches)
-  - [Guideline](#exclamation-guideline)  
-- [FAQ](#question-faq)
-- [Resources](#page_facing_up-resources)
-- [Gallery](#camera-gallery)
-- [Credit/Acknowledgment](#star2-creditacknowledgment)
-- [License](#lock-license)
-
-##  :beginner: About
+## Description
 Add a detailed introduction about the project here, everything you want the reader to know.
 
-## :zap: Usage
+## Usage
 Write about how to use this project.
 
 ###  :electric_plug: Installation
@@ -39,7 +15,7 @@ Write about how to use this project.
 $ add installations steps if you have to.
 ```
 
-###  :package: Commands
+### Commands
 - Commands to start the project.
 
 ##  :wrench: Development
@@ -80,19 +56,11 @@ Add a file structure here with the basic details about files, below is an exampl
 └── README.md
 ```
 
-| No | File Name | Details 
-|----|------------|-------|
-| 1  | index | Entry point
-
 ###  :hammer: Build
 Write the build Instruction here.
 
 ### :rocket: Deployment
 Write the deployment instruction here.
-
-## :cherry_blossom: Community
-
-If it's open-source, talk about the community here, ask social media links and other links.
 
  ###  :fire: Contribution
 
@@ -132,17 +100,6 @@ If it's open-source, talk about the community here, ask social media links and o
 3. It must pass all continuous integration checks and get positive reviews.
 
 After this, changes will be merged.
-
-
-### :exclamation: Guideline
-coding guidelines or other things you want people to follow should follow.
-
-
-## :question: FAQ
-You can optionally add a FAQ section about the project.
-
-##  :page_facing_up: Resources
-Add important resources here
 
 ##  :camera: Gallery
 Pictures of your project.
