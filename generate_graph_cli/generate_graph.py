@@ -1,44 +1,35 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import csv, argparse, pathlib, sys
+import pandas as pd
 
-def read_csv(csv_file, times, x_coords, y_coords):
-    with open(csv_file, 'r') as file:
-        csvreader = csv.reader(file)
-        for row in csvreader:
-            times.append(float(row[0]))
-            x_coords.append(float(row[1]))
-            y_coords.append(float(row[2]))
+def read_csv(csv_file):
+    df = pd.read_csv(csv_file)
+    return df.iloc[:, 0].values, df.iloc[:, 1].values, df.iloc[:, 2].values
 
 def show_plot(csv_file, plot_type):
-    x_coords = []
-    y_coords = []
-    times = []
-    read_csv(csv_file, times, x_coords, y_coords)
-    np_x_coords = np.array(x_coords)
-    np_y_coords = np.array(y_coords)
-    np_times = np.array(times)
+    times, x_coords, y_coords = read_csv(csv_file)
     if plot_type == 'x':
-        plot_generic(np_times, np_x_coords, 'Time (seconds)', 'X Coordinate', 
+        plot_generic(times, x_coords, 'Time (seconds)', 'X Coordinate', 
                      'X Coordinate vs Time')
     elif plot_type == 'y':
-        plot_generic(np_times, np_y_coords, 'Time (seconds)', 'Y Coordinate', 
+        plot_generic(times, y_coords, 'Time (seconds)', 'Y Coordinate', 
                      'Y Coordinate vs Time')
     elif plot_type == 'x_velocity':
-        x_velocity = calculate_velocity(x_coords, times)
-        plot_generic(np_times[1:], x_velocity, 'Time (seconds)', 
+        x_velocity, times = calculate_velocity(x_coords, times)
+        plot_generic(times, x_velocity, 'Time (seconds)', 
                         'X Velocity (m/s)', 'X Velocity vs Time')
     elif plot_type == 'y_velocity':
-        y_velocity = calculate_velocity(y_coords, times)
-        plot_generic(np_times[1:], y_velocity, 'Time (seconds)', 
-                        'Y Velocity (m/s)', 'Y Velocity vs Time')
+        y_velocity, times = calculate_velocity(y_coords, times)
+        plot_generic(times, y_velocity, 'Time (seconds)', 
+                     'Y Velocity (m/s)', 'Y Velocity vs Time')
     elif plot_type == 'x_acceleration':
-        x_acceleration = calculate_acceleration(x_coords, times[1:])
-        plot_generic(np_times[2:], x_acceleration, 'Time (seconds)', 
+        x_acceleration, times = calculate_acceleration(x_coords, times)
+        plot_generic(times, x_acceleration, 'Time (seconds)', 
                         'X Acceleration (m$^2$/s)', 'X Acceleration vs Time')
     elif plot_type == 'y_acceleration':
-        y_acceleration = calculate_acceleration(y_coords, times[1:])
-        plot_generic(np_times[2:], y_acceleration, 'Time (seconds)', 
+        y_acceleration, times = calculate_acceleration(y_coords, times)
+        plot_generic(times, y_acceleration, 'Time (seconds)', 
                         'Y Velocity (m$^2$/s)', 'Y Acceleration vs Time')
     else:
         print(f"Invalid plot type")
@@ -52,20 +43,24 @@ def plot_generic(x_data, y_data, x_label, y_label, title):
     plt.grid(True)
     plt.show()
 
-def calculate_velocity(coord_list, time_list):
-    velocities = np.zeros(len(coord_list) - 1)
-    frame_duration = time_list[1] - time_list[0]
-    for i in range(len(coord_list) - 1):
-        velocity = (coord_list[i+1] - coord_list[i]) / frame_duration 
-        velocities[i] = velocity
-    return velocities
+def calculate_velocity(coords, times):
+    coord_series = pd.Series(coords)
+    time_series = pd.Series(times)
+    delta_coord = coord_series.diff().iloc[1:]
+    delta_time = time_series.diff().iloc[1:]
+    velocities = delta_coord / delta_time
+    aligned_times = time_series.iloc[1:]
+    return velocities.values, aligned_times.values
 
-def calculate_acceleration(coord_list, time_list):
-    velocity = calculate_velocity(coord_list, time_list)
-    times = np.array(time_list)
-    delta_v = np.diff(velocity)
-    delta_t = np.diff(times)
-    return delta_v / delta_t
+def calculate_acceleration(coords, times):
+    coord_series = pd.Series(coords)
+    time_series = pd.Series(times)
+    velocity, time = calculate_velocity(coord_series, time_series)
+    delta_velocity = pd.Series(velocity).diff().iloc[1:]
+    delta_time = pd.Series(time).diff().iloc[1:]
+    accelerations = delta_velocity / delta_time
+    aligned_times = time_series.iloc[2:]
+    return accelerations.values, aligned_times.values
 
 def init_argparse() -> argparse.ArgumentParser:
     graph_choices = ["x", "y", "x_velocity", "y_velocity", "x_acceleration", "y_acceleration"]
