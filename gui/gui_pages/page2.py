@@ -1,6 +1,5 @@
 import os
 import sys
-import multiprocessing
 from multiprocessing import Process, Queue
 from queue import Empty
 import tkinter as tk
@@ -22,6 +21,13 @@ class Page2(tk.Frame):
         super().__init__(parent, **kwargs)
         self.control_btns = control_btns
         self.vid_manager = vid_manager
+
+        self.extraction_process_flag = False
+        self.extraction_error_flag = False
+        self.threshold_process_flag = False
+        self.threshold_error_flag = False
+        self.queue = Queue()
+
         tk.Label(self, text="Stage 2: Video Processing", 
                  font='TkDefaultFont 14 bold').pack()
         self.style = tb.Style()
@@ -39,11 +45,7 @@ class Page2(tk.Frame):
                                            command=self.next_step)
         self.select_dir_button.pack(pady=(0,10))
     
-        self.extraction_process_flag = False
-        self.extraction_error_flag = False
-        self.threshold_process_flag = False
-        self.threshold_error_flag = False
-        self.queue = Queue()
+        
 
     def next_step(self):
         path = filedialog.askdirectory()
@@ -117,8 +119,7 @@ class Page2(tk.Frame):
             self.check_extraction_status()
 
             roi1 = self.vid_manager.get_roi(1)[0]
-            result = cv2.imwrite(f"{self.output_path}{os.sep}roi1.png", roi1)
-            print(result)
+            cv2.imwrite(f"{self.output_path}{os.sep}roi1.png", roi1)
             roi2 = self.vid_manager.get_roi(2)[0]
             cv2.imwrite(f"{self.output_path}{os.sep}roi2.png", roi2)
 
@@ -135,20 +136,22 @@ class Page2(tk.Frame):
         else:
             if message.startswith("Progress"):
                 progress = message.split(" ")[1].split("/")
-                self.progress_bar['value'] = int(progress[0])/int(progress[1]) * 100
+                progress_percent = int(progress[0])/int(progress[1]) * 100
+                if progress_percent > 95: #Need to wait until thresholding also finishes. Simulate measuring both processes
+                    progress_percent = 95
+                self.progress_bar['value'] = progress_percent
             elif message.startswith("frame_delta_t"):
                 f_delta_t = float(message.split("=")[1].strip())
                 self.vid_manager.set_frame_duration(f_delta_t)
             elif message == "Process successful":
-                self.output_msg.config(text="Process successful", fg="green")
-                self.progress_bar['value'] = 100
-                self.control_btns.on_next()
                 self.extraction_process_flag = True
+                self.extraction_error_flag = False
             elif message.startswith("frame_rate"):
                 pass
             else:
                 self.output_msg.config(text="Process unsuccessful", fg="red")
                 self.extraction_error_flag = True
+                self.extraction_process_flag = False
         finally:
             self.after(20, self.check_extraction_status)
 
@@ -157,7 +160,8 @@ class Page2(tk.Frame):
         self.roi2_path= Path(f"{self.output_path}{os.sep}roi2.png")
         x = self.vid_manager.get_roi(1)[1][0]
         y = self.vid_manager.get_roi(1)[1][1]
-        threshold_process = Process(target=calculate_threshold, args=(self.roi1_path, self.roi2_path, x, y)) #multiprocessing
+        threshold_process = Process(target=calculate_threshold, 
+                                    args=(self.roi1_path, self.roi2_path, x, y, self.queue))
         threshold_process.start()
         self.check_threshold_status()
     
@@ -174,13 +178,17 @@ class Page2(tk.Frame):
             pass
         else:
             if message.startswith("Threshold Amount"):
-                threshold = message.split(" ")[1]
-                print(threshold)
+                threshold = message.split(": ")[1]
                 self.vid_manager.set_threshold(int(threshold))
+                self.progress_bar['value'] = 100
+                self.output_msg.config(text="Process successful", fg="green")
                 self.threshold_process_flag = True
+                self.threshold_error_flag = False
+                self.control_btns.on_next()
             else:
                 self.output_msg.config(text="Process unsuccessful", fg="red")
                 self.error_flag = True
+                self.threshold_process_flag = False
         finally:
             self.after(100, self.check_threshold_status)
 
