@@ -1,8 +1,9 @@
-import sys, os
+import sys
+import os
 import tkinter as tk
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from ttkbootstrap.tableview import Tableview
 import ttkbootstrap as tb
 
@@ -10,14 +11,13 @@ current_directory = os.path.dirname(sys.path[0])
 if current_directory not in sys.path:
     sys.path.append(current_directory)
 
-from generate_graph import read_csv, calculate_acceleration, calculate_velocity
+from generate_graph_cli.generate_graph import read_csv, calculate_acceleration, calculate_velocity
 
 #graph display
 class Page5(tk.Frame):
     def __init__(self, parent, control_btns, vid_manager, **kwargs):
         super().__init__(parent, **kwargs)
         self.control_btns = control_btns
-        self.vid_manager = vid_manager
         tk.Label(self, text="Stage 3: Results", 
                  font='TkDefaultFont 14 bold').pack(pady=20)
         self.setup_table()
@@ -34,11 +34,44 @@ class Page5(tk.Frame):
         graph_button.pack(pady=10)
 
     def setup_graph(self):
-        self.fig, self.ax = plt.subplots(figsize=(4.2,4.2))  # Change figsize as needed
-        self.canvas = FigureCanvasTkAgg(self.fig, master=self)
+        graph_frame = tk.Frame(self)
+        graph_frame.pack(side=tk.RIGHT, expand=True, fill=tk.X)
+        fig, self.ax = plt.subplots(figsize=(5,5))
+        self.canvas = FigureCanvasTkAgg(fig, master=graph_frame)      
+        fig.tight_layout(pad=2)
+        fig.canvas.draw()
+        toolbar = NavigationToolbar2Tk(self.canvas, graph_frame)
+        toolbar.update()
         self.canvas.get_tk_widget().pack(side=tk.RIGHT, expand=True, fill=tk.X)
-        self.fig.tight_layout(pad=3)
-        self.fig.canvas.draw()
+
+        self.annotation = self.ax.annotate(
+            text='',
+            xy=(0, 0),
+            xytext=(15, 15),
+            textcoords='offset points',
+            bbox={'boxstyle': 'round', 'fc': 'w'},
+            arrowprops={'arrowstyle': '->'}
+        )
+        self.annotation.set_visible(True)
+
+        fig.canvas.mpl_connect('motion_notify_event', self.detect_point)
+        
+    def detect_point(self, event):
+        annotation_visibility = self.annotation.get_visible()
+        if event.inaxes == self.ax:
+            is_point, annotation_index = self.plot.contains(event)
+            if is_point:
+                point_location = self.plot.get_offsets()[annotation_index['ind'][0]]
+                self.annotation.xy = point_location
+                text_label = f"({point_location[0]}, {point_location[1]})" 
+                self.annotation.set_text(text_label)
+                self.annotation.set_alpha(0.4)
+                self.annotation.set_visible(True)
+                self.canvas.draw_idle()
+            else:
+                if annotation_visibility:
+                    self.annotation.set_visible(False)
+                    self.canvas.draw_idle()
 
     def setup_table(self):
         self.table_container = tk.Frame(self)
@@ -53,12 +86,11 @@ class Page5(tk.Frame):
         self.table.config(height=10)
         self.table.pack(side=tk.TOP, padx=(0,10), pady=(50,0))
         
-
     def add_table_values(self, path):
         self.times = []
         self.x = []
         self.y = []
-        read_csv(path, self.times, self.x, self.y)
+        self.times, self.x, self.y = read_csv(path)
         rows_to_insert = []
         for i in range(len(self.times)):
             round_time = round(self.times[i], 4)
@@ -93,37 +125,40 @@ class Page5(tk.Frame):
             title = 'Y Coordinate vs Time'
 
         elif plot_type == "x Velocity":
-            x_velocity = calculate_velocity(self.x, self.times)
-            x, y = self.np_times[1:], x_velocity
+            x_velocity, times = calculate_velocity(self.x, self.times)
+            x, y = times, x_velocity
             x_label = 'Time (seconds)'
             y_label = 'X Velocity (m/s)'
             title = 'X Velocity vs Time'
 
         elif plot_type == "y Velocity":
-            y_velocity = calculate_velocity(self.y, self.times)
-            x, y = self.np_times[1:], y_velocity
+            y_velocity, times = calculate_velocity(self.y, self.times)
+            x, y = times, y_velocity
             x_label = 'Time (seconds)'
             y_label = 'Y Velocity (m/s)'
             title = 'Y Velocity vs Time'
 
         elif plot_type == "x Acceleration":
-            x_acceleration = calculate_acceleration(self.x, self.times[1:])
-            x, y = self.np_times[2:], x_acceleration
+            x_acceleration, times = calculate_acceleration(self.x, self.times)
+            x, y = times, x_acceleration
             x_label = 'Time (seconds)'
             y_label = 'X Acceleration (m$^2$/s)'
             title = 'X Acceleration vs Time'
             
         elif plot_type == "y Acceleration":
-            y_acceleration = calculate_acceleration(self.y, self.times[1:])
-            x, y = self.np_times[2:], y_acceleration
+            y_acceleration, times = calculate_acceleration(self.y, self.times)
+            x, y = times, y_acceleration
             x_label = 'Time (seconds)'
             y_label = 'Y Acceleration (m$^2$/s)'
             title = 'Y Acceleration vs Time'
 
         self.ax.clear()
-        self.ax.plot(x, y, label=title)
+        self.plot = self.ax.scatter(x, y, color='blue', marker='+', label=title)
         self.ax.set_xlabel(x_label)
         self.ax.set_ylabel(y_label)
+        self.ax.grid(True, which='both', linestyle='--')
+        self.ax.axhline(0, color='black', linewidth=1.25)
+        self.ax.axvline(0, color='black', linewidth=1.25)
         self.canvas.draw()
     
     def can_next(self):

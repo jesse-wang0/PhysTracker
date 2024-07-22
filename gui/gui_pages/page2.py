@@ -12,7 +12,6 @@ from pathlib import Path
 current_directory = os.path.dirname(sys.path[0])
 if current_directory not in sys.path:
     sys.path.append(current_directory)
-
 from extract_frame_cli.extract_frame import extract_frame
 from thresholding_cli.thresholding import calculate_threshold
 
@@ -45,8 +44,6 @@ class Page2(tk.Frame):
                                            command=self.next_step)
         self.select_dir_button.pack(pady=(0,10))
     
-        
-
     def next_step(self):
         path = filedialog.askdirectory()
         if path:
@@ -116,6 +113,8 @@ class Page2(tk.Frame):
             args.append(self.queue)
             p1 = Process(target=extract_frame, args=tuple(args)) #multiprocessing
             p1.start()
+            self.process_button['state'] = 'disabled'
+            self.process_button.config(text='Processing')
             self.check_extraction_status()
 
             roi1 = self.vid_manager.get_roi(1)[0]
@@ -146,8 +145,6 @@ class Page2(tk.Frame):
             elif message == "Process successful":
                 self.extraction_process_flag = True
                 self.extraction_error_flag = False
-            elif message.startswith("frame_rate"):
-                pass
             else:
                 self.output_msg.config(text="Process unsuccessful", fg="red")
                 self.extraction_error_flag = True
@@ -182,6 +179,8 @@ class Page2(tk.Frame):
                 self.vid_manager.set_threshold(int(threshold))
                 self.progress_bar['value'] = 100
                 self.output_msg.config(text="Process successful", fg="green")
+                self.process_button['state'] = 'active'
+                self.process_button.config(text='Process')
                 self.threshold_process_flag = True
                 self.threshold_error_flag = False
                 self.control_btns.on_next()
