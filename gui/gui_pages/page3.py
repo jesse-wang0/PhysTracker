@@ -1,14 +1,28 @@
+import os
+import sys
+from multiprocessing import Process, Queue
+from queue import Empty
 import tkinter as tk
-import os, subprocess, sys, cv2, shutil
-from ttkbootstrap.constants import *
+import cv2
 import ttkbootstrap as tb
+from ttkbootstrap.constants import *
+from pathlib import Path
 
-# Combining frames into mask
+current_directory = os.path.dirname(sys.path[0])
+if current_directory not in sys.path:
+    sys.path.append(current_directory)
+
+from combine_images_cli.combine_images import combine_images
+
 class Page3(tk.Frame):
     def __init__(self, parent, control_btns, vid_manager, **kwargs):
         super().__init__(parent, **kwargs)
         self.control_btns = control_btns
         self.vid_manager = vid_manager
+        self.combine_process_flag = False
+        self.combine_error_flag = False
+        self.queue = Queue()
+        
         tk.Label(self, text="Stage 2: Video Processing", 
                  font='TkDefaultFont 14 bold').pack()
         self.style = tb.Style()
@@ -50,41 +64,48 @@ class Page3(tk.Frame):
     def combine_frames(self):
         input_path = self.vid_manager.get_output_path()
         self.output_path = f"{input_path}{os.sep}mask"
-        with os.scandir(self.output_path) as entries:
-            for entry in entries:
-                if entry.is_file():
-                    os.unlink(entry.path)
-        threshold = self.vid_manager.get_threshold()
-
-        if input_path and self.output_path:
-            python_executable = sys.executable
-            command = [python_executable, "combine_images.py", "-i", input_path,
-                       "-o", self.output_path, "-t", str(threshold)]
-            self.process = subprocess.Popen(command, stdout=subprocess.PIPE, 
-                                            stderr=subprocess.PIPE)
-            self.process_button['state'] = 'disabled'
-            self.after(500, self.check_process)
-
-    def check_process(self):
-        if self.process.poll() is None:
-            stdout_line = self.process.stdout.readline().decode().strip()
-            if stdout_line.startswith("Processing"):
-                progress = stdout_line.split(" ")[1].split("/")
-                self.progress_bar['value'] = int(progress[0])/int(progress[1]) * 100
-            # Process has not completed yet, check again after 500ms
-            self.after(500, self.check_process)
+        if os.path.isdir(self.output_path):
+            with os.scandir(self.output_path) as entries:
+                for entry in entries:
+                    if entry.is_file():
+                        os.unlink(entry.path)
         else:
-            exitcode = self.process.returncode
-            if exitcode == 0:
+            os.mkdir(self.output_path)
+        threshold = self.vid_manager.get_threshold()
+        if input_path and self.output_path:
+            p1 = Process(target=combine_images, 
+                         args=(Path(input_path), Path(self.output_path), 
+                               threshold, False, self.queue)
+                        )
+            p1.start()
+            self.process_button['state'] = 'disabled'
+            self.check_combine_status()
+
+    def check_combine_status(self):
+        if self.combine_process_flag or self.combine_error_flag:
+            return
+        try:
+            message = self.queue.get(block=False)
+        except Empty:
+            pass
+        else:
+            if message.startswith("Progress"):
+                progress = message.split(" ")[1].split("/")
+                self.progress_bar['value'] = int(progress[0])/int(progress[1]) * 100
+            elif message == "Process successful":
                 self.output_msg.config(text="Process successful", fg="green")
                 self.progress_bar['value'] = 100
                 self.control_btns.on_next()
                 self.setup_image()
                 self.process_button['state'] = 'active'
+                self.combine_process_flag = True
+                self.combine_error_flag = False
             else:
                 self.output_msg.config(text="Process unsuccessful", fg="red")
-                stdout, stderr = self.process.communicate()
-                print(stderr.decode())
+                self.combine_error_flag = True
+                self.combine_process_flag = False
+        finally:
+            self.after(100, self.check_combine_status)
 
     def setup_image(self):
         self.img_container = tk.Frame(self, highlightthickness=1, 
@@ -116,3 +137,8 @@ class Page3(tk.Frame):
         self.mask_img = self.vid_manager.render_image(roi_cropped, 1.75)
         self.image_label.config(image=self.mask_img)
         self.vid_manager.set_region((x,y,w,h))
+
+    def can_next(self):
+        if self.combine_process_flag:
+            return True
+        return False
