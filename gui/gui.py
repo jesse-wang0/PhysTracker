@@ -2,8 +2,10 @@ import tkinter as tk
 from ttkbootstrap.constants import *
 import ttkbootstrap as tb
 from tkinter import filedialog
+import matplotlib.pyplot as plt
+import multiprocessing
 
-from video_manager import VideoProcessor
+from video_manager import VideoManager
 from gui_pages.page1 import Page1
 from gui_pages.page2 import Page2
 from gui_pages.page3 import Page3
@@ -18,7 +20,7 @@ class MainApplication(tk.Frame):
         height = parent.winfo_height()
         self.menubar = MenuBar(self)
         self.buttons = BottomButtons(self, self.prev, self.next)
-        self.vid_manager = VideoProcessor((width, height))
+        self.vid_manager = VideoManager((width, height))
 
         self.page1 = Page1(self, self.buttons, self.vid_manager)
         self.page2 = Page2(self, self.buttons, self.vid_manager)
@@ -33,6 +35,11 @@ class MainApplication(tk.Frame):
         self.buttons.pack(side=tk.BOTTOM, anchor='ne')
         self.page1.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
     
+    #This method is required due to the matplotlib embedded in Page 5. Need to close it manually.
+    def on_closing(self):
+        plt.close('all')  # Close all Matplotlib plots
+        self.quit()
+        
     def move(self, direction):
         index = self.pages.index(self.current) + direction
         if 0 <= index < len(self.pages):
@@ -104,8 +111,11 @@ class MenuBar(tk.Menu):
             self.parent.setup_page1(path)
 
 if __name__ == "__main__":
+    multiprocessing.freeze_support()
     root = tb.Window(themename="litera")
-    root.title("App")
-    root.geometry("1000x600")
-    MainApplication(root).pack(side="top", fill="both", expand=True)
+    root.title("PhysTracker")
+    root.geometry("1200x800") #width x height
+    main_app = MainApplication(root)
+    main_app.pack(side="top", fill="both", expand=True)
+    root.protocol("WM_DELETE_WINDOW", main_app.on_closing)
     root.mainloop()
