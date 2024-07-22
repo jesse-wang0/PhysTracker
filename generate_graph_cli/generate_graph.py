@@ -1,11 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
-import csv, argparse, pathlib, sys
+import argparse, pathlib, sys
 import pandas as pd
-
-def read_csv(csv_file):
-    df = pd.read_csv(csv_file)
-    return df.iloc[:, 0].values, df.iloc[:, 1].values, df.iloc[:, 2].values
 
 def show_plot(csv_file, plot_type):
     times, x_coords, y_coords = read_csv(csv_file)
@@ -33,7 +29,11 @@ def show_plot(csv_file, plot_type):
                         'Y Velocity (m$^2$/s)', 'Y Acceleration vs Time')
     else:
         print(f"Invalid plot type")
-    
+
+def read_csv(csv_file):
+    df = pd.read_csv(csv_file)
+    print(df)
+    return df['Time'].values, df['x'].values, df['y'].values
 
 def plot_generic(x_data, y_data, x_label, y_label, title):
     plt.plot(x_data, y_data, 'o')
