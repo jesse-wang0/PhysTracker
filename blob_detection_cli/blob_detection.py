@@ -1,9 +1,8 @@
 import sys, cv2, argparse, pathlib, os
 import numpy as np
-import matplotlib.pyplot as plt
 import numpy as np
 
-def detect_blobs(image_path, output_path, region):
+def detect_blobs(image_path, output_path, region, queue=None):
     input_path = str(image_path.resolve())
     img = cv2.imread(input_path, cv2.IMREAD_GRAYSCALE)
     x, y, w, h = region
@@ -21,7 +20,9 @@ def detect_blobs(image_path, output_path, region):
     img_with_keypoints = cv2.drawKeypoints(cropped_img, keypoints, np.array([]), 
                                            colour, flag_match)
     cv2.imwrite(f"{output_path}{os.sep}path_blobs.png", img_with_keypoints)
-    print("Process complete", flush=True)
+    if queue is not None:
+        queue.put("Process successful")
+    print("Process successful", flush=True)
 
 def prepare_image(image):
     adap_thresh = cv2.adaptiveThreshold(image, 255, 

@@ -1,9 +1,13 @@
 import cv2, os, argparse, pathlib, sys, csv
 from tabulate import tabulate
-from blob_detection import setup_detector
+
+current_directory = os.path.dirname(sys.path[0])
+if current_directory not in sys.path:
+    sys.path.append(current_directory)
+from blob_detection_cli.blob_detection import setup_detector
 
 def get_positions(frames_path, frame_duration, roi, scale,
-                  avg_file_name="average.jpg"):
+                  avg_file_name="average.jpg", queue=None):
     avg_background_path = str(frames_path.resolve()) + os.sep + avg_file_name
     average_background = cv2.imread(avg_background_path)
     input_path = str(frames_path.resolve())
@@ -46,15 +50,19 @@ def get_positions(frames_path, frame_duration, roi, scale,
         if max_area_point is not None:
             x_coords.append(max_area_point.pt[0] * scale)
             y_coords.append((image_height - max_area_point.pt[1]) * scale)
-        print(f"Processing: {count}/{len(img_paths) - 1}", file=sys.stderr)
+            progress_msg = f"Progress: {count}/{len(img_paths) - 1}"
+            if queue is not None:
+                queue.put(progress_msg)
+            print(progress_msg, flush=True)
         count += 1
 
-    headers = ["Time (seconds)", "x (meters)", "y (meters)"]
+    header = ["Time (seconds)", "x (meters)", "y (meters)"]
     rows = []
+
     for i in range(len(x_coords)):
         rows.append([i * frame_duration, x_coords[i], y_coords[i]])
 
-    table = tabulate(rows, headers, tablefmt="grid")
+    table = tabulate(rows, header, tablefmt="grid")
     print(table, file=sys.stdout)
 
     output_path = f"{input_path}{os.sep}data"
@@ -63,9 +71,11 @@ def get_positions(frames_path, frame_duration, roi, scale,
 
     with open(f"{output_path}{os.sep}position_data.csv", "w", newline="") as csvfile:
         writer = csv.writer(csvfile)
+        writer.writerow(["Time", "x", "y"])
         writer.writerows(rows)
-
-    print("Process complete", flush=True)
+    if queue is not None:
+        queue.put("Process successful")
+    print("Process successful", flush=True)
     
 def tuple_type(strings):
     strings = strings.replace("(", "").replace(")", "")

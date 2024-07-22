@@ -24,7 +24,7 @@ def is_dir_empty(path):
     with os.scandir(path) as scan:
         return next(scan, None) is None
 
-def to_image(video_path, output_path, frame_skip=1, force_flag=False):
+def extract_frame(video_path, output_path, frame_skip=1, force_flag=False, queue=None):
     '''Converts mp4 video into individual frames and stores in 
     provided output path.
 
@@ -42,6 +42,7 @@ def to_image(video_path, output_path, frame_skip=1, force_flag=False):
             if not force_flag:
                 raise IOError(f"Files already exist in {output_abs_path}.")
             else:
+                # Following xxxx.jpg naming convention
                 for filename in os.listdir(output_abs_path):
                     file_path = os.path.join(output_abs_path, filename)
                     if filename[-4:].lower() == ".jpg":
@@ -68,6 +69,7 @@ def to_image(video_path, output_path, frame_skip=1, force_flag=False):
                 result_average = image.copy()
             else:
                 if image is not None:
+                    # Getting average background for comparison in get_positions
                     result_average = result_average * (count / (count+1)) \
                                      + image * (1 / (count+1))
 
@@ -80,16 +82,20 @@ def to_image(video_path, output_path, frame_skip=1, force_flag=False):
             if count%frame_skip == 0:
                 write_path = f"{output_abs_path}{os.sep}{str(count).zfill(5)}.jpg"
                 write_success = cv2.imwrite(write_path, image) # save as JPEG
+                if queue is not None:
+                    queue.put(f"Progress: {count}/{total_frame_count}")
                 print(f"Progress: {count}/{total_frame_count}", flush=True)
             if not write_success:
                 raise ExtractFrameException(f"Unable to save to jpg.")
         except Exception as e:
-            raise ExtractFrameException(f"""Exception converting image \
-                                        jpg format. {e}""")
+            raise ExtractFrameException(f"Exception converting image into jpg format. {e}")
         count += 1
 
     cv2.imwrite(f"{output_abs_path}{os.sep}average.jpg", result_average)
-    print("Process complete", flush=True)
+    if queue is not None:
+        queue.put(f"frame_delta_t={frame_delta_t}")
+        queue.put("Process successful")
+    print("Process successful", flush=True)
     return fps, frame_delta_t
 
 def init_argparse() -> argparse.ArgumentParser:
@@ -122,7 +128,7 @@ def main() -> None:
     parser = init_argparse()
     args = parser.parse_args()
     try:
-        fps, frame_delta_t = to_image(args.infile, args.outdir, args.skip, 
+        fps, frame_delta_t = extract_frame(args.infile, args.outdir, args.skip, 
                                       args.force)
 
         print(f"frame_rate = {fps}")

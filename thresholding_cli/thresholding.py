@@ -1,10 +1,13 @@
 import sys, pathlib, cv2, argparse, math
 
+class ThresholdingException(Exception):
+    pass
+
 def calculate_threshold(image1_path, image2_path, 
-                        dimensionX=None, dimensionY=None):
+                        dimensionX=None, dimensionY=None, queue=None):
     input_path1 = str(image1_path.resolve())
     img1 = cv2.imread(input_path1, cv2.IMREAD_GRAYSCALE)
-    
+
     input_path2 = str(image2_path.resolve())
     img2 = cv2.imread(input_path2, cv2.IMREAD_GRAYSCALE)
 
@@ -19,6 +22,8 @@ def calculate_threshold(image1_path, image2_path,
         row_start = y
         row_end = y + h
 
+    if col_end - col_start == 0 or row_end - row_start == 0:
+        raise ThresholdingException("Invalid region select again")
     differences = []
     for column in range(min(col_start, col_end), max(col_start, col_end)):
         for row in range(min(row_start, row_end), max(row_start, row_end)):
@@ -26,9 +31,11 @@ def calculate_threshold(image1_path, image2_path,
             second_frame_area = int(img2[row][column])
             diff = abs(first_frame_area - second_frame_area)
             differences.append(diff)
-
-    print(f"Threshold Amount: {math.ceil(sum(differences)/len(differences))}")
-    return math.ceil(sum(differences)/len(differences))
+    threshold = math.ceil(sum(differences)/len(differences))
+    print(f"Threshold Amount: {threshold}")
+    if queue is not None:
+        queue.put(f"Threshold Amount: {threshold}")
+    return threshold
 
 def init_argparse() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog=sys.argv[0],

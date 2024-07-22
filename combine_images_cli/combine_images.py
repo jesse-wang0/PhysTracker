@@ -4,7 +4,7 @@ import pathlib
 import cv2
 from PIL import Image
 
-def combine_images(input_path, output_path, threshold, force_flag):
+def combine_images(input_path, output_path, threshold, force_flag, queue):
     """Takes frames and computes difference between them, and 
     combines these differences into one image.
 
@@ -49,14 +49,18 @@ def combine_images(input_path, output_path, threshold, force_flag):
                 else:
                     img[i][j] = (int(img[i][j]) + int(nxt[i][j]))/2
         os.remove(f"{output_abs_path}/diff{x}.png")
-        print(f"Processing: {x}/{diff_len - 1}")
+        if queue is not None:
+            queue.put(f"Progress: {x}/{diff_len - 1}")
+        print(f"Progress: {x}/{diff_len - 1}", flush=True)
 
     for i, row in enumerate(img):
         for j, pixel in enumerate(row):
             if img[i][j] < 255:
                 img[i][j] = 0
     cv2.imwrite(f"{output_abs_path}{os.sep}mask.png", img)
-    print("Process complete", flush=True)
+    if queue is not None:
+        queue.put("Process successful")
+    print("Process successful", flush=True)
 
 def is_dir_empty(path):
     '''Checks if directory provided is empty
