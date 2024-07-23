@@ -12,11 +12,6 @@ Key Features:
 - Graphical User Interface (GUI): Utilizes tkinter and ttkbootstrap to create a multi-page application for easy navigation and interaction.
 
 ## Usage
-Write about how to use this project.
-
-```
-$ add installations steps if you have to.
-```
 
 ### Pre-Requisites
 Python Libaries utilised: OpenCV, matplotlib, pyinstaller, pandas, ttkbootstrap, tabulate, numpy. 
@@ -28,10 +23,12 @@ Python Libaries utilised: OpenCV, matplotlib, pyinstaller, pandas, ttkbootstrap,
 - Create a new pull request in GitHub.
  
 ## Gallery
-
+![image](https://github.com/user-attachments/assets/2eceb1fa-4ff8-493b-b621-cbc490717414)
+![image](https://github.com/user-attachments/assets/fe306152-7ad8-476f-92c9-a0491c3cec90)
+![image](https://github.com/user-attachments/assets/6a1e4682-464a-4f22-bb4e-f9627796651b)
 
 ## Credit/Acknowledgment
-
+Jesse Wang
 
 ## License
 
