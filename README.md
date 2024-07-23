@@ -2,7 +2,7 @@
 A video analysis and modelling CLI tool/GUI for physics education purposes.
 
 ## Description
-The video processing tool is designed to analyze and visualize data from video files. It includes functionalities for loading, processing, and displaying results in a user-friendly interface. Uses semi-automated tracking to calculate position, velocity and acceleration data.
+The video processing tool is designed to analyze and visualize data from video files. Uses semi-automated tracking to calculate position, velocity and acceleration data.
 
 Key Features:
 
@@ -19,16 +19,9 @@ $ add installations steps if you have to.
 ```
 
 ### Pre-Requisites
-List all the pre-requisites the system needs to develop this project.
-- A tool
-- B tool
+Python Libaries utilised: OpenCV, matplotlib, pyinstaller, pandas, ttkbootstrap, tabulate, numpy. 
 
-### Development Environment
-Write about setting up the working environment for your project.
-- How to download the project...
-- How to install dependencies...
-
- ### Contribution
+### Contribution
 - Fork the project and clone locally.
 - Create a new branch for what you're going to work on.
 - Push to your origin repository.
