@@ -24,8 +24,8 @@ Python Libaries utilised: OpenCV, matplotlib, pyinstaller, pandas, ttkbootstrap,
  
 ## Gallery
 ![image](https://github.com/user-attachments/assets/2eceb1fa-4ff8-493b-b621-cbc490717414)
-![image](https://github.com/user-attachments/assets/fe306152-7ad8-476f-92c9-a0491c3cec90)
-![image](https://github.com/user-attachments/assets/6a1e4682-464a-4f22-bb4e-f9627796651b)
+![image](https://github.com/user-attachments/assets/d4c4d110-effe-4ee6-8bb6-cebd53d442e9)
+![image](https://github.com/user-attachments/assets/e95b065a-ca9e-4fa7-92bd-6ae4ebe7d10c)
 
 ## Credit/Acknowledgment
 Jesse Wang
