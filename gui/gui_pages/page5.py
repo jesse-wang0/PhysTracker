@@ -36,42 +36,15 @@ class Page5(tk.Frame):
     def setup_graph(self):
         graph_frame = tk.Frame(self)
         graph_frame.pack(side=tk.RIGHT, expand=True, fill=tk.X)
-        fig, self.ax = plt.subplots(figsize=(5,5))
-        self.canvas = FigureCanvasTkAgg(fig, master=graph_frame)      
-        fig.tight_layout(pad=2)
-        fig.canvas.draw()
-        toolbar = NavigationToolbar2Tk(self.canvas, graph_frame)
+        self.fig, self.ax = plt.subplots(figsize=(5,5))
+        self.canvas = FigureCanvasTkAgg(self.fig, master=graph_frame)
+        self.fig.tight_layout(pad=2)
+        self.canvas.draw()
+        test = tk.Frame(graph_frame)
+        test.pack(fill=tk.X, padx=(100,50), pady=(40,0))
+        toolbar = NavigationToolbar2Tk(self.canvas, test)
         toolbar.update()
         self.canvas.get_tk_widget().pack(side=tk.RIGHT, expand=True, fill=tk.X)
-
-        self.annotation = self.ax.annotate(
-            text='',
-            xy=(0, 0),
-            xytext=(15, 15),
-            textcoords='offset points',
-            bbox={'boxstyle': 'round', 'fc': 'w'},
-            arrowprops={'arrowstyle': '->'}
-        )
-        self.annotation.set_visible(True)
-
-        fig.canvas.mpl_connect('motion_notify_event', self.detect_point)
-        
-    def detect_point(self, event):
-        annotation_visibility = self.annotation.get_visible()
-        if event.inaxes == self.ax:
-            is_point, annotation_index = self.plot.contains(event)
-            if is_point:
-                point_location = self.plot.get_offsets()[annotation_index['ind'][0]]
-                self.annotation.xy = point_location
-                text_label = f"({point_location[0]}, {point_location[1]})" 
-                self.annotation.set_text(text_label)
-                self.annotation.set_alpha(0.4)
-                self.annotation.set_visible(True)
-                self.canvas.draw_idle()
-            else:
-                if annotation_visibility:
-                    self.annotation.set_visible(False)
-                    self.canvas.draw_idle()
 
     def setup_table(self):
         self.table_container = tk.Frame(self)
@@ -160,6 +133,35 @@ class Page5(tk.Frame):
         self.ax.axhline(0, color='black', linewidth=1.25)
         self.ax.axvline(0, color='black', linewidth=1.25)
         self.canvas.draw()
-    
+
+        self.annotation = self.ax.annotate(
+            text='',
+            xy=(0,0),
+            xytext=(-50,20),
+            textcoords='offset points',
+            bbox={'boxstyle': 'round', 'fc': 'w'},
+            arrowprops={'arrowstyle': '->'}
+        )
+        self.annotation.set_visible(False)
+
+        self.fig.canvas.mpl_connect('motion_notify_event', self.detect_point)
+        
+    def detect_point(self, event):
+        annotation_visibility = self.annotation.get_visible()
+        if event.inaxes == self.ax:
+            is_point, annotation_index = self.plot.contains(event)
+            if is_point:
+                point_location = self.plot.get_offsets()[annotation_index['ind'][0]]
+                self.annotation.xy = point_location
+                text_label = f"({round(point_location[0], 4)}, {round(point_location[1], 4)})" 
+                self.annotation.set_text(text_label)
+                self.annotation.set_alpha(0.8)
+                self.annotation.set_visible(True)
+                self.canvas.draw_idle()
+            else:
+                if annotation_visibility:
+                    self.annotation.set_visible(False)
+                    self.canvas.draw_idle()
+
     def can_next(self):
         return False
