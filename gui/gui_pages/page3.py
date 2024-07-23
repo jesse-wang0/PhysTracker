@@ -44,10 +44,15 @@ class Page3(tk.Frame):
         self.output_msg.pack()
     
     def setup_prereq(self):
-        output_path = f"{self.vid_manager.get_output_path()}{os.sep}mask"
-        if os.path.exists(output_path):
-            if not os.path.isdir(output_path):
-                os.mkdir(output_path)
+        self.output_path = f"{self.vid_manager.get_output_path()}{os.sep}mask"
+        if os.path.exists(self.output_path):
+            if os.path.isdir(self.output_path):
+                with os.scandir(self.output_path) as entries:
+                    for entry in entries:
+                        if entry.is_file():
+                            os.unlink(entry.path)
+            elif not os.path.isdir(self.output_path):
+                os.mkdir(self.output_path)
 
     def setup_progress_bar(self):
         progress_container = tk.Frame(self.mask_container)
@@ -63,14 +68,8 @@ class Page3(tk.Frame):
 
     def combine_frames(self):
         input_path = self.vid_manager.get_output_path()
-        self.output_path = f"{input_path}{os.sep}mask"
-        if os.path.isdir(self.output_path):
-            with os.scandir(self.output_path) as entries:
-                for entry in entries:
-                    if entry.is_file():
-                        os.unlink(entry.path)
-        else:
-            os.mkdir(self.output_path)
+        self.setup_prereq()
+
         threshold = self.vid_manager.get_threshold()
         if input_path and self.output_path:
             p1 = Process(target=combine_images, 
@@ -79,6 +78,7 @@ class Page3(tk.Frame):
                         )
             p1.start()
             self.process_button['state'] = 'disabled'
+            self.process_button.config(text='Processing')
             self.check_combine_status()
 
     def check_combine_status(self):
@@ -98,6 +98,7 @@ class Page3(tk.Frame):
                 self.control_btns.on_next()
                 self.setup_image()
                 self.process_button['state'] = 'active'
+                self.process_button.config(text='Process')
                 self.combine_process_flag = True
                 self.combine_error_flag = False
             else:
@@ -126,7 +127,6 @@ class Page3(tk.Frame):
         
         crop_button = tb.Button(crop_container, text='Crop', bootstyle="outline", command=self.crop_image)
         crop_button.pack(side=tk.TOP)
-
         
     def crop_image(self):
         raw_img = cv2.imread(self.mask_path)
